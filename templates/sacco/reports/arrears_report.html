@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Arrears Report • Vaulta Capital Growth{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div>
+      <p class="text-sm font-medium text-rose-700">Delinquency Tracking</p>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900">Arrears Report</h1>
+      <p class="mt-2 text-sm text-slate-600">Overdue open loans with unpaid balances as of {{ today }}.</p>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="window.print()" class="btn-secondary">Print</button>
+      <a href="{% url 'sacco:reports_home' %}" class="btn-primary">Back to Reports</a>
+    </div>
+  </div>
+
+  <div class="rounded-3xl border bg-white p-6 shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="border-b text-left text-slate-500">
+            <th class="px-3 py-3">Loan ID</th>
+            <th class="px-3 py-3">Member</th>
+            <th class="px-3 py-3">Phone</th>
+            <th class="px-3 py-3">Due Date</th>
+            <th class="px-3 py-3">Expected Total</th>
+            <th class="px-3 py-3">Paid</th>
+            <th class="px-3 py-3">Balance</th>
+            <th class="px-3 py-3">Days Overdue</th>
+            <th class="px-3 py-3">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr class="border-b last:border-b-0">
+            <td class="px-3 py-3 font-semibold text-slate-900">{{ row.loan.loan_id }}</td>
+            <td class="px-3 py-3">{{ row.loan.member.full_name }}</td>
+            <td class="px-3 py-3">{{ row.loan.member.phone }}</td>
+            <td class="px-3 py-3">{{ row.loan.due_date }}</td>
+            <td class="px-3 py-3">UGX {{ row.loan.expected_total|floatformat:0 }}</td>
+            <td class="px-3 py-3 text-emerald-700">UGX {{ row.loan.amount_paid_a|floatformat:0 }}</td>
+            <td class="px-3 py-3 font-semibold text-rose-700">UGX {{ row.loan.balance_a|floatformat:0 }}</td>
+            <td class="px-3 py-3">
+              <span class="inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                {{ row.days_overdue }} days
+              </span>
+            </td>
+            <td class="px-3 py-3">
+              <a href="{% url 'sacco:loan_statement' row.loan.pk %}" class="text-amber-700 hover:underline">
+                View Statement
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="px-3 py-10 text-center text-slate-500">
+              No overdue loans found.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

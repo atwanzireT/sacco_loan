@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Loans — Great Pearl SACCO{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root{
+    --brand:#D59C2E;
+    --brand-50:#FBF5E8;
+    --brand-100:#F6E9CC;
+    --brand-200:#EED299;
+    --brand-300:#E5BC66;
+    --brand-700:#A6781F;
+    --ring: rgba(213,156,46,.18);
+    --shadow: 0 10px 25px -15px rgba(0,0,0,.18);
+  }
+
+  .page-wrap{max-width:80rem;margin:0 auto;}
+  .gradient-border{
+    position:relative;
+    background:linear-gradient(#fff,#fff) padding-box,
+               linear-gradient(135deg,var(--brand) 0%, #f1c55a 100%) border-box;
+    border:1px solid transparent;
+  }
+
+  .kpi{
+    background:linear-gradient(135deg,#ffffff 0%,#f8fafc 100%);
+    border:1px solid #e5e7eb;
+    border-radius:1rem;
+    transition:all .25s ease;
+  }
+  .kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
+
+  .input{
+    width:100%;
+    border:1px solid #d1d5db;
+    border-radius:.9rem;
+    padding:.75rem .9rem;
+    font-size:.875rem;
+    background:#fff;
+    transition:.15s ease;
+  }
+  .input:focus{
+    outline:none;
+    border-color:var(--brand);
+    box-shadow:0 0 0 4px var(--ring);
+  }
+  .select{ padding-right:2.2rem; }
+
+  .th{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;font-weight:800;}
+  .row-hover{transition:.15s ease;}
+  .row-hover:hover{background:rgba(213,156,46,.05);}
+
+  .chip{
+    display:inline-flex;align-items:center;gap:.4rem;
+    border-radius:9999px;padding:.35rem .65rem;font-size:.75rem;
+    border:1px solid rgba(213,156,46,.35);
+    background:rgba(213,156,46,.08);
+    color:var(--brand-700);
+    white-space:nowrap;
+  }
+
+  .status-badge{
+    display:inline-flex;align-items:center;padding:.28rem .75rem;border-radius:9999px;
+    font-size:.75rem;font-weight:700; letter-spacing:.02em;
+    border:1px solid transparent;
+  }
+  .status-badge:before{
+    content:'';display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:.45rem;
+  }
+  .st-open{background:rgba(213,156,46,.10);color:var(--brand-700);border-color:rgba(213,156,46,.35);}
+  .st-open:before{background:var(--brand);}
+  .st-overdue{background:#fef2f2;color:#991b1b;border-color:#fecaca;}
+  .st-overdue:before{background:#ef4444;}
+  .st-closed{background:#f3f4f6;color:#374151;border-color:#e5e7eb;}
+  .st-closed:before{background:#6b7280;}
+
+  .progress-wrap{height:.55rem;border-radius:9999px;background:#f3f4f6;overflow:hidden;}
+  .progress-bar{height:100%;border-radius:9999px;background:linear-gradient(90deg,var(--brand),#f1c55a);width:0%;}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+    padding:.65rem 1rem;border-radius:.9rem;font-size:.875rem;font-weight:800;
+    border:1px solid transparent;cursor:pointer;transition:all .2s ease;
+    user-select:none; white-space:nowrap;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 18px -16px rgba(0,0,0,.35);}
+  .btn-primary{
+    color:#fff;
+    background:linear-gradient(to right,var(--brand),#f1c55a);
+  }
+  .btn-outline{
+    background:#fff;border-color:#e5e7eb;color:#374151;
+  }
+  .btn-outline:hover{background:#f9fafb;}
+  .btn-icon{width:1rem;height:1rem;}
+
+  /* Pills for row actions */
+  .action-pill{
+    display:inline-flex;align-items:center;gap:.35rem;
+    padding:.42rem .78rem;border-radius:9999px;
+    font-size:.75rem;font-weight:800;line-height:1;
+    border:1px solid transparent;transition:all .2s ease;
+  }
+  .action-pill:hover{transform:translateY(-1px);box-shadow:0 8px 16px -14px rgba(0,0,0,.4);}
+  .btn-view{color:var(--brand-700);background:rgba(213,156,46,.10);border-color:rgba(213,156,46,.35);}
+  .btn-view:hover{background:rgba(213,156,46,.18);}
+  .btn-edit{color:#374151;background:#f3f4f6;border-color:#e5e7eb;}
+  .btn-edit:hover{background:#e5e7eb;}
+  .btn-pay{color:#065f46;background:#ecfdf5;border-color:#a7f3d0;}
+  .btn-pay:hover{background:#d1fae5;}
+
+  .avatar{
+    width:2.5rem;height:2.5rem;border-radius:1rem;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--brand),#f1c55a);
+    color:#fff;font-weight:900;font-size:.9rem;
+  }
+
+  .muted{color:#6b7280;font-size:.8rem;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50/40 py-6">
+  <div class="page-wrap px-4 sm:px-6 lg:px-8">
+
+    <!-- Header -->
+    <div class="mb-6">
+      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-extrabold text-gray-900">Loan Portfolio</h1>
+          <p class="text-gray-600 mt-1">Search, filter and track SACCO loans</p>
+        </div>
+        {% if request.user.is_authenticated %}
+          <a href="{% url 'sacco:loan_create' %}" class="btn btn-primary">
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            New Loan
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if stats %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="kpi p-4">
+          <div class="text-xs font-extrabold text-gray-500 uppercase tracking-wider">Total Loans</div>
+          <div class="text-2xl font-extrabold text-gray-900 mt-1">{{ stats.total|intcomma }}</div>
+        </div>
+        <div class="kpi p-4">
+          <div class="text-xs font-extrabold text-gray-500 uppercase tracking-wider">Open</div>
+          <div class="text-2xl font-extrabold mt-1" style="color:var(--brand-700);">{{ stats.open|intcomma }}</div>
+        </div>
+        <div class="kpi p-4">
+          <div class="text-xs font-extrabold text-gray-500 uppercase tracking-wider">Overdue</div>
+          <div class="text-2xl font-extrabold text-red-700 mt-1">{{ stats.overdue|intcomma }}</div>
+        </div>
+        <div class="kpi p-4">
+          <div class="text-xs font-extrabold text-gray-500 uppercase tracking-wider">Total Outstanding (UGX)</div>
+          <div class="text-2xl font-extrabold text-gray-900 mt-1">{{ stats.outstanding|floatformat:0|intcomma }}</div>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Filters -->
+    <div class="gradient-border rounded-2xl bg-white p-5 sm:p-6 mb-6">
+      <form method="get" id="filter-form" class="space-y-4">
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+          <!-- Search -->
+          <div class="lg:col-span-5">
+            <label class="block text-xs font-extrabold text-gray-600 uppercase tracking-wider mb-2">Search</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </span>
+              <input type="text" name="q" value="{{ q }}" placeholder="Member name, phone, NIN, loan note..."
+                     class="input pl-10">
+              {% if q %}
+                <a href="{% url 'sacco:loan_list' %}"
+                   class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-700"
+                   title="Clear search">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </a>
+              {% endif %}
+            </div>
+            <div class="muted mt-2">Press Enter to search</div>
+          </div>
+
+          <!-- Status -->
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-extrabold text-gray-600 uppercase tracking-wider mb-2">Status</label>
+            <select name="status" class="input select js-autosubmit">
+              <option value="">All</option>
+              <option value="OPEN" {% if status == "OPEN" %}selected{% endif %}>Open</option>
+              <option value="OVERDUE" {% if status == "OVERDUE" %}selected{% endif %}>Overdue</option>
+              <option value="CLOSED" {% if status == "CLOSED" %}selected{% endif %}>Closed</option>
+            </select>
+          </div>
+
+          <!-- Payment Mode -->
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-extrabold text-gray-600 uppercase tracking-wider mb-2">Mode</label>
+            <select name="payment_mode" class="input select js-autosubmit">
+              <option value="">All</option>
+              {% for v in Loan.PaymentMode.values %}
+                <option value="{{ v }}" {% if payment_mode == v %}selected{% endif %}>
+                  {{ v|title }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Sort -->
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-extrabold text-gray-600 uppercase tracking-wider mb-2">Sort</label>
+            <select name="order" class="input select js-autosubmit">
+              {% for code,label in ORDER_CHOICES %}
+                <option value="{{ code }}" {% if order == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Per page -->
+          <div class="lg:col-span-1">
+            <label class="block text-xs font-extrabold text-gray-600 uppercase tracking-wider mb-2">Show</label>
+            <select name="per_page" class="input select js-autosubmit">
+              {% for n in PER_PAGE_OPTIONS %}
+                <option value="{{ n }}" {% if per_page == n %}selected{% endif %}>{{ n }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Date range -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-extrabold text-gray-600 uppercase tracking-wider mb-2">From</label>
+            <input type="date" name="date_from" value="{{ date_from }}" class="input js-autosubmit">
+          </div>
+          <div>
+            <label class="block text-xs font-extrabold text-gray-600 uppercase tracking-wider mb-2">To</label>
+            <input type="date" name="date_to" value="{{ date_to }}" class="input js-autosubmit">
+          </div>
+          <div class="flex items-end gap-2">
+            <button type="submit" class="btn btn-primary w-full">
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L14 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 018 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+              </svg>
+              Apply
+            </button>
+            <a href="{% url 'sacco:loan_list' %}" class="btn btn-outline">
+              Clear
+            </a>
+          </div>
+        </div>
+
+        <!-- Chips -->
+        <div class="flex flex-wrap gap-2 pt-1">
+          {% if q %}<span class="chip">Search: “{{ q }}”</span>{% endif %}
+          {% if status %}<span class="chip">Status: {{ status }}</span>{% endif %}
+          {% if payment_mode %}<span class="chip">Mode: {{ payment_mode }}</span>{% endif %}
+          {% if date_from %}<span class="chip">From: {{ date_from }}</span>{% endif %}
+          {% if date_to %}<span class="chip">To: {{ date_to }}</span>{% endif %}
+        </div>
+
+        <div class="text-sm text-gray-600">
+          Showing <span class="font-extrabold">{{ page.start_index }}</span>–<span class="font-extrabold">{{ page.end_index }}</span>
+          of <span class="font-extrabold">{{ page.paginator.count|intcomma }}</span> loans
+        </div>
+      </form>
+    </div>
+
+    <!-- Table -->
+    <div class="gradient-border rounded-2xl bg-white overflow-hidden">
+      {% if page.object_list %}
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-4 text-left th">Member</th>
+                <th class="px-6 py-4 text-left th">Loan</th>
+                <th class="px-6 py-4 text-left th">Progress</th>
+                <th class="px-6 py-4 text-left th">Dates</th>
+                <th class="px-6 py-4 text-right th">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-gray-200">
+              {% for loan in page.object_list %}
+                <tr class="row-hover">
+
+                  <!-- Member -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="avatar mr-3">
+                        {{ loan.member.full_name|default:"?"|first|upper }}
+                      </div>
+                      <div>
+                        <a href="{{ loan.member.get_absolute_url }}"
+                           class="text-sm font-extrabold text-gray-900 hover:text-[color:var(--brand)]">
+                          {{ loan.member.full_name|default:loan.member }}
+                        </a>
+                        <div class="text-xs text-gray-500 mt-0.5">
+                          {{ loan.member.phone }}{% if loan.member.nin %} • NIN: {{ loan.member.nin }}{% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Loan -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-extrabold text-gray-900">
+                      UGX {{ loan.principal|floatformat:0|intcomma }}
+                    </div>
+                    <div class="text-xs text-gray-500 mt-0.5">
+                      Expected: UGX {{ loan.expected_total|floatformat:0|intcomma }}
+                      • Balance:
+                      <span class="font-extrabold {% if loan.balance_a|default:0 <= 0 %}text-green-700{% else %}text-gray-700{% endif %}">
+                        UGX {{ loan.balance_a|floatformat:0|intcomma }}
+                      </span>
+                    </div>
+                  </td>
+
+                  <!-- Progress -->
+                  <td class="px-6 py-4 whitespace-nowrap" style="min-width: 220px;">
+                    {% with expected=loan.expected_total|default:0 paid=loan.amount_paid_a|default:0 %}
+                      <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-gray-500">Paid: UGX {{ paid|floatformat:0|intcomma }}</span>
+                        <span class="text-xs font-extrabold text-gray-700" data-expected="{{ expected }}" data-paid="{{ paid }}">—</span>
+                      </div>
+                      <div class="progress-wrap">
+                        <div class="progress-bar" data-progress data-expected="{{ expected }}" data-paid="{{ paid }}"></div>
+                      </div>
+                    {% endwith %}
+                  </td>
+
+                  <!-- Dates -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 font-semibold">{{ loan.start_date|date:"M j, Y" }}</div>
+                    <div class="text-xs text-gray-500 mt-0.5">
+                      Due: {{ loan.due_date|date:"M j, Y"|default:"—" }}
+                    </div>
+                  </td>
+
+                  <!-- Actions -->
+                  <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <div class="flex items-center justify-end gap-2">
+
+                      <a href="{{ loan.get_absolute_url }}" class="action-pill btn-view" title="View loan details">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7
+                                   -1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        View
+                      </a>
+
+                      {% if request.user.is_authenticated %}
+                        <a href="{% url 'sacco:loan_update' loan.id %}" class="action-pill btn-edit" title="Edit loan">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                          Edit
+                        </a>
+                      {% endif %}
+
+                    </div>
+                  </td>
+
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-12">
+          <h3 class="text-lg font-extrabold text-gray-900 mb-2">No loans found</h3>
+          <p class="text-gray-500 mb-6 max-w-md mx-auto">
+            {% if q or status or payment_mode or date_from or date_to %}
+              No loans match your filters. Try clearing or changing filters.
+            {% else %}
+              Get started by creating your first loan.
+            {% endif %}
+          </p>
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'sacco:loan_create' %}" class="btn btn-primary">
+              Create First Loan
+            </a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page.paginator.num_pages > 1 %}
+      <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="text-sm text-gray-700">
+          Page <span class="font-extrabold">{{ page.number }}</span> of <span class="font-extrabold">{{ page.paginator.num_pages }}</span>
+        </div>
+
+        <div class="flex items-center flex-wrap gap-2">
+          {% if page.has_previous %}
+            <a href="?{{ base_query }}&page=1" class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;">First</a>
+            <a href="?{{ base_query }}&page={{ page.previous_page_number }}" class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;">Prev</a>
+          {% else %}
+            <span class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;opacity:.5;cursor:not-allowed;">First</span>
+            <span class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;opacity:.5;cursor:not-allowed;">Prev</span>
+          {% endif %}
+
+          {% for n in page.paginator.page_range %}
+            {% if n >= page.number|add:"-2" and n <= page.number|add:"2" %}
+              {% if n == page.number %}
+                <span class="btn" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;border-color:rgba(213,156,46,.35);background:rgba(213,156,46,.10);color:var(--brand-700);">
+                  {{ n }}
+                </span>
+              {% else %}
+                <a href="?{{ base_query }}&page={{ n }}"
+                   class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;">
+                  {{ n }}
+                </a>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+
+          {% if page.has_next %}
+            <a href="?{{ base_query }}&page={{ page.next_page_number }}" class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;">Next</a>
+            <a href="?{{ base_query }}&page={{ page.paginator.num_pages }}" class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;">Last</a>
+          {% else %}
+            <span class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;opacity:.5;cursor:not-allowed;">Next</span>
+            <span class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;opacity:.5;cursor:not-allowed;">Last</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filter-form');
+  document.querySelectorAll('.js-autosubmit').forEach(el => {
+    el.addEventListener('change', () => form.submit());
+  });
+
+  // Progress calculations (client-side)
+  document.querySelectorAll('[data-progress]').forEach(bar => {
+    const expected = parseFloat(bar.dataset.expected || '0') || 0;
+    const paid = parseFloat(bar.dataset.paid || '0') || 0;
+    let pct = 0;
+    if (expected > 0) pct = Math.max(0, Math.min(100, (paid / expected) * 100));
+    bar.style.width = pct.toFixed(1) + '%';
+  });
+
+  document.querySelectorAll('span[data-expected][data-paid]').forEach(txt => {
+    const expected = parseFloat(txt.dataset.expected || '0') || 0;
+    const paid = parseFloat(txt.dataset.paid || '0') || 0;
+    let pct = 0;
+    if (expected > 0) pct = Math.max(0, Math.min(100, (paid / expected) * 100));
+    txt.textContent = pct.toFixed(0) + '%';
+  });
+});
+</script>
+{% endblock %}

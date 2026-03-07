@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Loan Statement • {{ loan.loan_id|default:loan.id }}{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div>
+      <p class="text-sm font-medium text-amber-700">Loan Statement</p>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ loan.loan_id|default:loan.id }}</h1>
+      <p class="mt-2 text-sm text-slate-600">
+        Member: {{ member.full_name }} • Phone: {{ member.phone }}
+      </p>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="window.print()" class="btn-secondary">Print</button>
+      <a href="{% url 'sacco:loan_detail' loan.pk %}" class="btn-primary">Back to Loan</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Principal</p>
+      <p class="mt-2 text-3xl font-bold text-slate-900">UGX {{ loan.principal|floatformat:0|intcomma }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Expected Total</p>
+      <p class="mt-2 text-3xl font-bold text-slate-900">UGX {{ loan.expected_total|floatformat:0|intcomma }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Amount Paid</p>
+      <p class="mt-2 text-3xl font-bold text-emerald-700">UGX {{ amount_paid|floatformat:0|intcomma }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Balance</p>
+      <p class="mt-2 text-3xl font-bold text-rose-700">UGX {{ balance|floatformat:0|intcomma }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <div class="rounded-3xl border bg-white p-6 shadow-sm">
+      <h2 class="text-xl font-semibold text-slate-900">Loan Details</h2>
+      <div class="mt-4 space-y-3">
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Payment Mode</span>
+          <span class="font-semibold text-slate-900">{{ loan.payment_mode }}</span>
+        </div>
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Interest Rate</span>
+          <span class="font-semibold text-slate-900">{{ loan.rate }}%</span>
+        </div>
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Period</span>
+          <span class="font-semibold text-slate-900">{{ loan.period }}</span>
+        </div>
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Installment Amount</span>
+          <span class="font-semibold text-slate-900">UGX {{ loan.installment_amount|floatformat:0|intcomma }}</span>
+        </div>
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Start Date</span>
+          <span class="font-semibold text-slate-900">{{ loan.start_date }}</span>
+        </div>
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Due Date</span>
+          <span class="font-semibold text-slate-900">{{ loan.due_date }}</span>
+        </div>
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Status</span>
+          <span class="font-semibold {% if loan.status == 'OPEN' %}text-amber-700{% else %}text-emerald-700{% endif %}">
+            {{ loan.status }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-3xl border bg-white p-6 shadow-sm">
+      <h2 class="text-xl font-semibold text-slate-900">Processing Fee</h2>
+      <div class="mt-4 space-y-3">
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Fee Amount</span>
+          <span class="font-semibold text-slate-900">UGX {{ loan.processing_fee|default:0|floatformat:0|intcomma }}</span>
+        </div>
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Paid?</span>
+          <span class="font-semibold {% if loan.processing_fee_paid %}text-emerald-700{% else %}text-rose-700{% endif %}">
+            {% if loan.processing_fee_paid %}Yes{% else %}No{% endif %}
+          </span>
+        </div>
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Paid On</span>
+          <span class="font-semibold text-slate-900">{{ loan.processing_fee_paid_on|default:"—" }}</span>
+        </div>
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Payment Method</span>
+          <span class="font-semibold text-slate-900">{{ loan.processing_fee_method|default:"—" }}</span>
+        </div>
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Receipt</span>
+          <span class="font-semibold text-slate-900">{{ loan.processing_fee_receipt|default:"—" }}</span>
+        </div>
+        <div class="flex justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <span class="text-sm text-slate-600">Fee Due</span>
+          <span class="font-semibold {% if processing_fee_due > 0 %}text-rose-700{% else %}text-emerald-700{% endif %}">
+            UGX {{ processing_fee_due|floatformat:0|intcomma }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-3xl border bg-white p-6 shadow-sm">
+    <h2 class="text-xl font-semibold text-slate-900">Repayment History</h2>
+    <div class="mt-4 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="border-b text-left text-slate-500">
+            <th class="px-3 py-3">Date</th>
+            <th class="px-3 py-3">Method</th>
+            <th class="px-3 py-3">Receipt</th>
+            <th class="px-3 py-3">Note</th>
+            <th class="px-3 py-3">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in payments %}
+          <tr class="border-b last:border-b-0">
+            <td class="px-3 py-3">{{ payment.date }}</td>
+            <td class="px-3 py-3">{{ payment.method|default:"—" }}</td>
+            <td class="px-3 py-3">{{ payment.receipt|default:"—" }}</td>
+            <td class="px-3 py-3">{{ payment.note|default:"—" }}</td>
+            <td class="px-3 py-3 font-semibold text-emerald-700">UGX {{ payment.amount|floatformat:0|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-3 py-10 text-center text-slate-500">No repayments recorded for this loan.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

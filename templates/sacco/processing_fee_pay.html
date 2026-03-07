@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto; padding: 24px 16px;">
+
+  <div style="max-width: 720px; margin: 0 auto;">
+
+    <!-- Header -->
+    <div style="margin-bottom: 18px;">
+      <h1 style="font-size: 24px; font-weight: 800; color: #0E3D25; margin: 0;">
+        Pay Processing Fee
+      </h1>
+      <p style="font-size: 13px; color: #4B5563; margin-top: 6px;">
+        Loan: <strong style="color:#111827;">{{ loan.loan_id }}</strong> —
+        Member: <strong style="color:#111827;">{{ loan.member.full_name }}</strong>
+      </p>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+      <div style="display: grid; gap: 10px; margin-bottom: 16px;">
+        {% for message in messages %}
+          {% if message.tags == 'success' %}
+            <div style="padding: 12px; border-radius: 10px; border: 1px solid #86efac; background: #ecfdf5; color: #065f46;">
+              {{ message }}
+            </div>
+          {% elif message.tags == 'error' %}
+            <div style="padding: 12px; border-radius: 10px; border: 1px solid #fca5a5; background: #fef2f2; color: #991b1b;">
+              {{ message }}
+            </div>
+          {% elif message.tags == 'warning' %}
+            <div style="padding: 12px; border-radius: 10px; border: 1px solid #fcd34d; background: #fffbeb; color: #92400e;">
+              {{ message }}
+            </div>
+          {% else %}
+            <div style="padding: 12px; border-radius: 10px; border: 1px solid #e5e7eb; background: #f9fafb; color: #111827;">
+              {{ message }}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Summary Card -->
+    <div style="border: 1px solid #e5e7eb; background: #ffffff; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); padding: 18px; margin-bottom: 18px;">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+        <div style="padding: 12px; border-radius: 12px; background: #F3F7F5; border: 1px solid #DDE7E1;">
+          <p style="font-size: 12px; color: #6B7280; margin: 0;">Processing Fee</p>
+          <p style="font-size: 18px; font-weight: 800; color: #0E3D25; margin: 6px 0 0;">
+            UGX {{ loan.processing_fee }}
+          </p>
+        </div>
+
+        <div style="padding: 12px; border-radius: 12px; background: #FFF7E6; border: 1px solid #F8D9A6;">
+          <p style="font-size: 12px; color: #6B7280; margin: 0;">Fee Due</p>
+          <p style="font-size: 18px; font-weight: 900; color: #92400e; margin: 6px 0 0;">
+            UGX {{ fee_due }}
+          </p>
+        </div>
+      </div>
+
+      {% if fee_due == 0 %}
+        <div style="margin-top: 14px; padding: 12px; border-radius: 12px; background: #ecfdf5; border: 1px solid #86efac; color: #065f46;">
+          This loan has no processing fee due (already paid or fee is zero).
+        </div>
+
+        <div style="margin-top: 14px;">
+          <a href="{{ loan.get_absolute_url }}"
+             style="display:inline-block; padding:10px 14px; border-radius: 10px; background:#0E3D25; color:#fff; text-decoration:none; font-weight:700;">
+            Back to Loan
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Form -->
+    {% if fee_due > 0 %}
+      <form method="post" style="border: 1px solid #e5e7eb; background: #ffffff; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); padding: 18px;">
+        {% csrf_token %}
+
+        <div style="display:grid; gap: 14px;">
+
+          <div>
+            <label style="display:block; font-size: 13px; font-weight: 700; color:#111827; margin-bottom: 6px;">
+              Paid On
+            </label>
+            <div style="border:1px solid #DDE7E1; border-radius: 10px; padding: 8px; background:#F9FAFB;">
+              {{ form.paid_on }}
+            </div>
+            {% if form.paid_on.errors %}
+              <p style="font-size: 12px; color:#b91c1c; margin-top: 6px;">{{ form.paid_on.errors|striptags }}</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <label style="display:block; font-size: 13px; font-weight: 700; color:#111827; margin-bottom: 6px;">
+              Payment Method
+            </label>
+            <div style="border:1px solid #DDE7E1; border-radius: 10px; padding: 8px; background:#F9FAFB;">
+              {{ form.method }}
+            </div>
+            {% if form.method.errors %}
+              <p style="font-size: 12px; color:#b91c1c; margin-top: 6px;">{{ form.method.errors|striptags }}</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <label style="display:block; font-size: 13px; font-weight: 700; color:#111827; margin-bottom: 6px;">
+              Receipt / Reference (optional)
+            </label>
+            <div style="border:1px solid #DDE7E1; border-radius: 10px; padding: 8px; background:#F9FAFB;">
+              {{ form.receipt }}
+            </div>
+            {% if form.receipt.errors %}
+              <p style="font-size: 12px; color:#b91c1c; margin-top: 6px;">{{ form.receipt.errors|striptags }}</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <label style="display:block; font-size: 13px; font-weight: 700; color:#111827; margin-bottom: 6px;">
+              Note (optional)
+            </label>
+            <div style="border:1px solid #DDE7E1; border-radius: 10px; padding: 8px; background:#F9FAFB;">
+              {{ form.note }}
+            </div>
+            {% if form.note.errors %}
+              <p style="font-size: 12px; color:#b91c1c; margin-top: 6px;">{{ form.note.errors|striptags }}</p>
+            {% endif %}
+          </div>
+
+        </div>
+
+        {% if form.non_field_errors %}
+          <div style="margin-top: 14px; padding: 12px; border-radius: 12px; background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b;">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <div style="display:flex; gap: 10px; align-items:center; margin-top: 18px;">
+          <button type="submit"
+                  style="padding:10px 14px; border-radius: 10px; border:none; background:#118B57; color:#fff; font-weight:800; cursor:pointer;">
+            Mark Fee as Paid
+          </button>
+
+          <a href="{{ loan.get_absolute_url }}"
+             style="display:inline-block; padding:10px 14px; border-radius: 10px; background:#0E3D25; color:#fff; text-decoration:none; font-weight:800;">
+            Cancel
+          </a>
+        </div>
+      </form>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}

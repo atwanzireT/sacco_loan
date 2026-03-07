@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - Sacco{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ title }}</h1>
+
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="rounded-md bg-red-50 p-4">
+                    <div class="text-sm text-red-700">
+                        {{ form.non_field_errors }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <!-- Title -->
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Expense Title *
+                        </label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.title.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Category and Amount -->
+                    <div>
+                        <label for="{{ form.category.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Category *
+                        </label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.category.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.amount.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Amount (UGX) *
+                        </label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.amount.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Date Incurred -->
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.date_incurred.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Date Incurred *
+                        </label>
+                        {{ form.date_incurred }}
+                        {% if form.date_incurred.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.date_incurred.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Purpose -->
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.purpose.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Purpose and Details *
+                        </label>
+                        {{ form.purpose }}
+                        {% if form.purpose.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.purpose.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">
+                            Provide a detailed explanation of why this expense was necessary for your work.
+                        </p>
+                    </div>
+
+                    <!-- Receipt -->
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.receipt.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Receipt *
+                        </label>
+                        {% if expense.receipt %}
+                        <div class="mb-2">
+                            <p class="text-sm text-gray-600">Current file: 
+                                <a href="{{ expense.receipt.url }}" target="_blank" class="text-[#D59C2E] hover:text-[#B8860B]">
+                                    {{ expense.receipt.name|slice:"-20:" }}
+                                </a>
+                            </p>
+                        </div>
+                        {% endif %}
+                        {{ form.receipt }}
+                        {% if form.receipt.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.receipt.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">
+                            Upload a clear photo or scan of the receipt (PDF, JPG, PNG, WEBP). Max 5MB.
+                        </p>
+                    </div>
+
+                    <!-- Supporting Docs -->
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.supporting_docs.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Supporting Documents (Optional)
+                        </label>
+                        {% if expense.supporting_docs %}
+                        <div class="mb-2">
+                            <p class="text-sm text-gray-600">Current file: 
+                                <a href="{{ expense.supporting_docs.url }}" target="_blank" class="text-[#D59C2E] hover:text-[#B8860B]">
+                                    {{ expense.supporting_docs.name|slice:"-20:" }}
+                                </a>
+                            </p>
+                        </div>
+                        {% endif %}
+                        {{ form.supporting_docs }}
+                        {% if form.supporting_docs.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.supporting_docs.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">
+                            Additional documents like quotes, approvals, or explanations.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                    <a href="{% if expense %}{% url 'sacco:expense_detail' expense.pk %}{% else %}{% url 'sacco:expense_list' %}{% endif %}" 
+                       class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#D59C2E] hover:bg-[#B8860B] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D59C2E]">
+                        {% if expense %}Update Expense{% else %}Submit Expense{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

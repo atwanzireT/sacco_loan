@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Loan #{{ loan.id }} — {{ loan.member.full_name }} — Great Pearl SACCO{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root{
+    --brand:#D59C2E;
+    --brand-grad:#f1c55a;
+    --brand-soft:#F8EDD1;
+    --ring:rgba(213,156,46,.18);
+  }
+
+  .stat-card{
+    transition:.3s ease;
+    background:linear-gradient(135deg,#fff 0%,#f8fafc 100%);
+  }
+  .stat-card:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 25px -5px rgba(0,0,0,.1);
+  }
+
+  .gradient-border{
+    position:relative;
+    background:
+      linear-gradient(#fff,#fff) padding-box,
+      linear-gradient(135deg,var(--brand) 0%,var(--brand-grad) 100%) border-box;
+    border:1px solid transparent;
+    border-radius:12px;
+  }
+
+  .section-header{
+    border-left:4px solid var(--brand);
+  }
+
+  .kpi-icon{
+    width:40px;
+    height:40px;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(135deg,var(--brand) 0%,var(--brand-grad) 100%);
+  }
+
+  .action-btn{transition:.2s ease;}
+  .action-btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 4px 6px -1px rgba(0,0,0,.1);
+  }
+
+  .btn-brand{
+    background-image:linear-gradient(90deg,var(--brand),var(--brand-grad));
+    color:#fff;
+    border-radius:12px;
+  }
+  .btn-brand:hover{filter:brightness(.96);}
+
+  .btn-outline{
+    border:1px solid var(--brand);
+    color:var(--brand);
+    background:#fff;
+    border-radius:12px;
+  }
+  .btn-outline:hover{background:var(--brand-soft);}
+
+  .link-brand{color:var(--brand);}
+  .link-brand:hover{opacity:.85;}
+
+  .progress-bar{
+    height:8px;
+    border-radius:6px;
+    overflow:hidden;
+    background:#f1f5f9;
+  }
+
+  .progress-fill{
+    height:100%;
+    border-radius:6px;
+    background:linear-gradient(90deg,var(--brand),var(--brand-grad));
+    transition:width .5s ease;
+  }
+
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    padding:.35rem .6rem;
+    border-radius:9999px;
+    font-size:.75rem;
+    font-weight:600;
+  }
+  .badge-warn{
+    background:#FEF3C7;
+    color:#92400E;
+    border:1px solid #FDE68A;
+  }
+  .badge-ok{
+    background:rgba(34,197,94,.12);
+    color:#16a34a;
+    border:1px solid rgba(34,197,94,.25);
+  }
+
+  .pill{
+    padding:.2rem .5rem;
+    border-radius:9999px;
+    font-size:.7rem;
+    font-weight:600;
+  }
+  .pill-overdue{
+    background:#fee2e2;
+    color:#b91c1c;
+    border:1px solid #fecaca;
+  }
+
+  .table-card{
+    overflow:hidden;
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+  }
+
+  .th{
+    padding:.75rem 1.5rem;
+    text-align:left;
+    font-size:.75rem;
+    font-weight:600;
+    letter-spacing:.02em;
+    color:#6b7280;
+    text-transform:uppercase;
+  }
+
+  .td{
+    padding:1rem 1.5rem;
+    font-size:.9rem;
+    color:#111827;
+  }
+
+  .tr{transition:background .2s ease;}
+  .tr:hover{background:#f9fafb;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50/30 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+        <div class="mb-4 lg:mb-0">
+          <div class="flex items-center space-x-3 mb-2">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center"
+                 style="background-image:linear-gradient(90deg,var(--brand),var(--brand-grad));">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900">Loan #{{ loan.id }}</h1>
+              <p class="text-gray-600">
+                <a href="{{ loan.member.get_absolute_url }}" class="link-brand">{{ loan.member.full_name }}</a>
+                • {{ loan.member.phone }} • {{ loan.get_payment_mode_display }} Payments
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <a href="{% url 'sacco:loan_list' %}"
+             class="action-btn inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Loans
+          </a>
+
+          <a href="{% url 'sacco:loan_statement' loan.id %}"
+             class="action-btn inline-flex items-center btn-outline px-4 py-2.5 text-sm font-medium">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Statement
+          </a>
+
+          {% if can_edit_loan %}
+            <a href="{% url 'sacco:loan_update' loan.id %}"
+               class="action-btn inline-flex items-center btn-outline px-4 py-2.5 text-sm font-medium">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+              Edit Loan
+            </a>
+          {% endif %}
+
+          {% if can_add_payment %}
+            <a href="{% url 'sacco:payment_create' loan.id %}"
+               class="action-btn inline-flex items-center btn-brand px-4 py-2.5 text-sm font-medium shadow-sm">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+              Record Payment
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+      <div class="stat-card rounded-xl border border-gray-200 p-6 text-center">
+        <div class="kpi-icon mx-auto mb-3">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Expected Total</div>
+        <div class="mt-1 text-2xl font-bold text-gray-900">UGX {{ expected_total|floatformat:0|intcomma }}</div>
+      </div>
+
+      <div class="stat-card rounded-xl border border-gray-200 p-6 text-center">
+        <div class="kpi-icon mx-auto mb-3">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2m0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Paid</div>
+        <div class="mt-1 text-2xl font-bold text-gray-900">UGX {{ total_paid|floatformat:0|intcomma }}</div>
+      </div>
+
+      <div class="stat-card rounded-xl border border-gray-200 p-6 text-center">
+        <div class="kpi-icon mx-auto mb-3">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Balance</div>
+        <div class="mt-1 text-2xl font-bold {% if balance|floatformat:2 == '0.00' %}text-green-600{% else %}text-gray-900{% endif %}">
+          UGX {{ balance|floatformat:0|intcomma }}
+        </div>
+      </div>
+
+      <div class="stat-card rounded-xl border border-gray-200 p-6 text-center">
+        <div class="kpi-icon mx-auto mb-3">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Progress</div>
+        <div class="mt-1 text-2xl font-bold text-gray-900" id="loan-progress-value">0%</div>
+      </div>
+    </div>
+
+    <div class="mb-8">
+      <div class="flex justify-between text-sm text-gray-600 mb-2">
+        <span>Repayment Progress</span>
+        <span id="progress-percentage">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+      <div class="xl:col-span-2 gradient-border bg-white p-6">
+        <div class="flex items-center section-header pl-3 mb-6">
+          <h2 class="text-lg font-semibold text-gray-900">Loan Details</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-sm font-medium text-gray-700">Member</span>
+            <span class="text-sm font-medium text-gray-900">{{ loan.member.full_name }}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-sm font-medium text-gray-700">Phone</span>
+            <span class="text-sm font-medium text-gray-900">{{ loan.member.phone }}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-sm font-medium text-gray-700">Principal</span>
+            <span class="text-sm font-medium text-gray-900">UGX {{ loan.principal|floatformat:0|intcomma }}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-sm font-medium text-gray-700">Processing Fee</span>
+            <span class="text-sm font-medium text-gray-900">UGX {{ loan.processing_fee|default:0|floatformat:0|intcomma }}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-sm font-medium text-gray-700">Installment Amount</span>
+            <span class="text-sm font-medium text-gray-900">UGX {{ loan.installment_amount|floatformat:0|intcomma }}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-sm font-medium text-gray-700">Period</span>
+            <span class="text-sm font-medium text-gray-900">{{ period }} months</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-sm font-medium text-gray-700">Annual Rate</span>
+            <span class="text-sm font-medium text-gray-900">{{ loan.rate|floatformat:2 }}%</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-sm font-medium text-gray-700">Start Date</span>
+            <span class="text-sm font-medium text-gray-900">{{ loan.start_date }}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-sm font-medium text-gray-700">Due Date</span>
+            <span class="text-sm font-medium text-gray-900">{% if loan.due_date %}{{ loan.due_date }}{% else %}—{% endif %}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-sm font-medium text-gray-700">Status</span>
+            <span>
+              {% if loan.status == 'OPEN' %}
+                <span class="badge badge-warn">
+                  Open
+                  {% if loan.is_overdue %}
+                    <span class="ml-1 pill pill-overdue">Overdue {{ loan.days_overdue }}d</span>
+                  {% endif %}
+                </span>
+              {% else %}
+                <span class="badge badge-ok">Closed</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+
+        {% if loan.note %}
+          <div class="mt-4 p-3 rounded-lg border" style="background:#EFF6FF;border-color:#BFDBFE">
+            <div class="text-sm font-medium text-blue-900 mb-1">Note</div>
+            <div class="text-sm text-blue-800">{{ loan.note }}</div>
+          </div>
+        {% endif %}
+
+        {% if loan.created %}
+          <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+            <div class="text-xs text-gray-600">
+              Created: {{ loan.created|date:"M j, Y" }}
+              {% if loan.created_by %}
+                <br>by {{ loan.created_by.get_full_name|default:loan.created_by.username }}
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="gradient-border bg-white p-6">
+        <div class="flex items-center section-header pl-3 mb-6">
+          <h2 class="text-lg font-semibold text-gray-900">Quick Actions</h2>
+        </div>
+
+        <div class="space-y-3">
+          <a href="{% url 'sacco:loan_statement' loan.id %}"
+             class="w-full inline-flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <span>Open Loan Statement</span>
+            <span>→</span>
+          </a>
+
+          <a href="{% url 'sacco:member_statement' loan.member.id %}"
+             class="w-full inline-flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <span>Member Statement</span>
+            <span>→</span>
+          </a>
+
+          {% if can_add_payment %}
+            <a href="{% url 'sacco:payment_create' loan.id %}"
+               class="w-full inline-flex items-center justify-between rounded-xl btn-brand px-4 py-3 text-sm font-medium shadow-sm">
+              <span>Record Payment</span>
+              <span>+</span>
+            </a>
+          {% endif %}
+
+          <a href="{% url 'sacco:reports_home' %}"
+             class="w-full inline-flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <span>Reports Center</span>
+            <span>→</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div class="xl:col-span-2 gradient-border bg-white p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center section-header pl-3">
+            <h2 class="text-lg font-semibold text-gray-900">Payment Schedule</h2>
+          </div>
+          {% if can_add_payment %}
+            <a href="{% url 'sacco:payment_create' loan.id %}"
+               class="action-btn inline-flex items-center btn-brand px-4 py-2 text-sm font-medium">
+              Record Payment
+            </a>
+          {% endif %}
+        </div>
+
+        {% if payment_schedule %}
+          <div class="table-card">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="th">#</th>
+                  <th class="th">Due Date</th>
+                  <th class="th">Amount</th>
+                  <th class="th">Remaining</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                {% for row in payment_schedule %}
+                  <tr class="tr {% if row.remaining_balance == 0 %}opacity-60{% endif %}">
+                    <td class="td text-sm font-medium text-gray-900">{{ row.installment_number }}</td>
+                    <td class="td text-sm">
+                      {{ row.due_date }}
+                      {% if row.is_overdue and row.remaining_balance > 0 %}
+                        <span class="ml-2 pill pill-overdue">Overdue</span>
+                      {% endif %}
+                    </td>
+                    <td class="td text-sm">UGX {{ row.amount|floatformat:0|intcomma }}</td>
+                    <td class="td text-sm">UGX {{ row.remaining_balance|floatformat:0|intcomma }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
+            No payment schedule available for this loan.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="gradient-border bg-white p-6">
+        <div class="flex items-center section-header pl-3 mb-6">
+          <h2 class="text-lg font-semibold text-gray-900">Payment History</h2>
+        </div>
+
+        {% if payments %}
+          <div class="space-y-4">
+            {% for p in payments %}
+              <div class="rounded-xl border border-gray-200 p-4">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <div class="text-sm font-semibold text-gray-900">UGX {{ p.amount|floatformat:0|intcomma }}</div>
+                    <div class="text-xs text-gray-500">{{ p.date|date:"M j, Y" }}</div>
+                  </div>
+                  <div class="text-right">
+                    {% if p.method %}
+                      <div class="text-xs text-gray-600">{{ p.method }}</div>
+                    {% endif %}
+                    {% if p.receipt %}
+                      <div class="text-xs text-gray-500">Receipt: {{ p.receipt }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                {% if p.note %}
+                  <div class="text-sm text-gray-700 bg-white p-2 rounded border mt-3">
+                    "{{ p.note }}"
+                  </div>
+                {% endif %}
+
+                {% if p.created_by %}
+                  <div class="text-xs text-gray-500 mt-2">
+                    Recorded by {{ p.created_by.get_full_name|default:p.created_by.username }}<br>
+                    {{ p.created|date:"M j, Y H:i" }}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-12 text-gray-500">
+            <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="text-sm">No payments recorded yet</p>
+            {% if can_add_payment %}
+              <a href="{% url 'sacco:payment_create' loan.id %}"
+                 class="mt-3 inline-block text-sm link-brand font-medium">
+                Record first payment →
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const expected = parseFloat("{{ expected_total|default:0 }}") || 0;
+    const paid = parseFloat("{{ total_paid|default:0 }}") || 0;
+    const pct = expected > 0 ? Math.min((paid / expected) * 100, 100) : 0;
+
+    const fill = document.getElementById("progress-fill");
+    const pctText = document.getElementById("progress-percentage");
+    const loanPct = document.getElementById("loan-progress-value");
+
+    if (fill) fill.style.width = pct.toFixed(1) + "%";
+    if (pctText) pctText.textContent = pct.toFixed(1) + "%";
+    if (loanPct) loanPct.textContent = pct.toFixed(1) + "%";
+  })();
+</script>
+{% endblock %}

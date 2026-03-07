@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}
+  {% if title %}{{ title }}{% else %}Record Payment — Loan #{{ loan.loan_id|default:loan.id }}{% endif %} — Great Pearl SACCO
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root {
+    --brand: #D59C2E;
+    --brand-50: #FBF5E8;
+    --brand-100: #F6E9CC;
+    --brand-200: #EED299;
+    --brand-300: #E5BC66;
+    --brand-700: #A6781F;
+  }
+
+  .page-wrap { max-width: 80rem; margin-left:auto; margin-right:auto; }
+  .brand-text { color: var(--brand); }
+  .brand-text-700 { color: var(--brand-700); }
+
+  .card { background:#fff; border-radius:1rem; border:1px solid #e5e7eb; transition:.25s ease; }
+  .card:hover { box-shadow:0 10px 25px -5px rgba(0,0,0,.08); }
+  .card-header {
+    border-bottom:1px solid #e5e7eb; padding:1rem 1.5rem;
+    background:linear-gradient(135deg,#f9fafb 0%,#f3f4f6 100%);
+  }
+  .card-body { padding:1.5rem; }
+
+  .stats-grid {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:1rem; margin-bottom:2rem;
+  }
+  .stat-item {
+    background:linear-gradient(135deg,#ffffff 0%,#fafafa 100%);
+    border:1px solid #e5e7eb; border-radius:.75rem; padding:1.25rem;
+    transition:transform .2s ease;
+  }
+  .stat-item:hover { transform:translateY(-2px); box-shadow:0 8px 20px -8px rgba(0,0,0,.1); }
+  .stat-value { font-size:1.5rem; font-weight:700; color:#111827; margin-top:.5rem; }
+  .stat-label { font-size:.75rem; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em; }
+
+  .form-group { margin-bottom:1.5rem; }
+  .form-label { display:block; font-size:.875rem; font-weight:500; color:#374151; margin-bottom:.5rem; }
+  .form-error { margin-top:.5rem; font-size:.875rem; color:#ef4444; }
+
+  .tabs-container {
+    background:#f9fafb; border-radius:.75rem; padding:.25rem; display:inline-flex; margin-bottom:1rem;
+  }
+  .tab-btn {
+    padding:.625rem 1.25rem; border-radius:.5rem; font-size:.875rem; font-weight:500;
+    color:#6b7280; border:none; background:none; cursor:pointer; transition:.2s ease;
+  }
+  .tab-btn.active { background:#fff; color:var(--brand-700); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+
+  .amount-chips { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1rem; }
+  .amount-chip {
+    padding:.5rem 1rem; border:2px solid #e5e7eb; border-radius:.75rem; background:#fff;
+    font-size:.875rem; color:#4b5563; cursor:pointer; transition:.2s ease;
+  }
+  .amount-chip:hover { border-color:var(--brand); background:var(--brand-50); transform:translateY(-1px); }
+
+  .balance-preview {
+    background:linear-gradient(135deg,var(--brand-50) 0%, #fff 100%);
+    border:1px solid var(--brand-100);
+    border-radius:.75rem; padding:1rem; margin-top:1rem;
+  }
+  .balance-row { display:flex; justify-content:space-between; align-items:center; padding:.5rem 0; }
+  .balance-label { color:#6b7280; font-size:.875rem; }
+  .balance-value { font-weight:600; color:#111827; font-size:1rem; }
+
+  .btn {
+    padding:.625rem 1.25rem; border-radius:.75rem; font-size:.875rem; font-weight:500;
+    border:2px solid transparent; cursor:pointer; transition:.2s ease;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .btn-primary { background:linear-gradient(135deg,var(--brand) 0%, var(--brand-700) 100%); color:#fff; }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 10px 20px -10px rgba(213,156,46,.4); }
+  .btn-secondary { background:#fff; border-color:#e5e7eb; color:#374151; }
+  .btn-secondary:hover { background:#f9fafb; }
+  .btn-icon { margin-right:.5rem; width:1rem; height:1rem; }
+
+  .amount-input-wrapper { position:relative; max-width:22rem; }
+  .amount-input-wrapper .currency {
+    position:absolute; left:1rem; top:50%; transform:translateY(-50%);
+    color:#6b7280; font-weight:600;
+  }
+  .amount-input-wrapper input { padding-left:3.25rem !important; }
+
+  .muted { color:#6b7280; font-size:.875rem; }
+  .hidden { display:none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="page-wrap px-4 sm:px-6 lg:px-8">
+
+    <!-- Header -->
+    <header class="mb-8">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">
+            <span class="brand-text">{% if title %}{{ title }}{% else %}Record Payment{% endif %}</span>
+          </h1>
+          <div class="flex flex-wrap items-center gap-2 mt-1 text-gray-600">
+            <span>Loan #{{ loan.loan_id|default:loan.id }}</span>
+            <span class="text-gray-300">•</span>
+            <a href="{{ loan.member.get_absolute_url }}" class="font-medium brand-text-700 hover:underline">
+              {{ loan.member.full_name }}
+            </a>
+            <span class="text-gray-300">•</span>
+            <span>{{ loan.member.phone }}</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="{{ loan.get_absolute_url }}" class="btn btn-secondary">
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to Loan
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Loan Statistics -->
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-label">Principal Amount</div>
+        <div class="stat-value">UGX {{ loan.principal|floatformat:0|intcomma }}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Expected Total</div>
+        <div class="stat-value">UGX {{ loan.expected_total|floatformat:0|intcomma }}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Amount Paid</div>
+        <div class="stat-value brand-text-700">UGX {{ loan.amount_paid|floatformat:0|intcomma }}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Remaining Balance</div>
+        <div class="stat-value {% if loan.balance == 0 %}brand-text-700{% endif %}">
+          UGX {{ loan.balance|floatformat:0|intcomma }}
+        </div>
+      </div>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="card border-l-4 border-red-500 mb-6">
+        <div class="card-body">
+          <div class="flex items-start">
+            <svg class="w-5 h-5 text-red-500 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+              <h3 class="text-sm font-medium text-red-800">Please correct the following errors:</h3>
+              <div class="mt-1 text-sm text-red-700">{{ form.non_field_errors }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <form method="post" class="space-y-6" id="payment-form">
+      {% csrf_token %}
+      {{ form.loan.as_hidden }}
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <svg class="w-5 h-5 mr-2 brand-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            Payment Details
+          </h2>
+          <p class="text-sm text-gray-500 mt-1">
+            You cannot exceed the remaining balance of UGX {{ loan.balance|floatformat:0|intcomma }}.
+          </p>
+        </div>
+
+        <div class="card-body">
+          <div class="grid md:grid-cols-2 gap-6">
+            <!-- Payment Date -->
+            <div class="form-group">
+              <label for="{{ form.date.auto_id }}" class="form-label">Payment Date *</label>
+              {{ form.date }}
+              {% if form.date.errors %}<div class="form-error">{{ form.date.errors.0 }}</div>{% endif %}
+            </div>
+
+            <!-- Payment Method -->
+            <div class="form-group">
+              <label for="{{ form.method.auto_id }}" class="form-label">Payment Method *</label>
+              {{ form.method }}
+              {% if form.method.errors %}<div class="form-error">{{ form.method.errors.0 }}</div>{% endif %}
+            </div>
+
+            <!-- Amount -->
+            <div class="form-group md:col-span-2">
+              <label for="{{ form.amount.auto_id }}" class="form-label">Payment Amount (UGX) *</label>
+
+              <div class="tabs-container">
+                <button type="button" class="tab-btn active" data-tab="suggested">Suggested Installment</button>
+                <button type="button" class="tab-btn" data-tab="custom">Custom Amount</button>
+              </div>
+
+              <div id="tab-suggested-content" class="tab-content">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div class="amount-input-wrapper">
+                    <span class="currency">UGX</span>
+                    <input type="text"
+                           id="suggested-amount-display"
+                           value="{{ suggested_amount|default:0|floatformat:2 }}"
+                           readonly
+                           class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm">
+                  </div>
+
+                  <button type="button" id="use-suggested-btn" class="btn btn-primary">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Use This Amount
+                  </button>
+                </div>
+
+                <p class="text-sm text-gray-500 mt-2">
+                  Suggested installment for
+                  {% if suggested_due_date %}
+                    due <span class="font-medium text-gray-900">{{ suggested_due_date }}</span>
+                  {% else %}
+                    current period
+                  {% endif %}
+                </p>
+              </div>
+
+              <div id="tab-custom-content" class="tab-content hidden">
+                <div class="amount-input-wrapper">
+                  <span class="currency">UGX</span>
+                  {{ form.amount }}
+                </div>
+
+                {% if form.amount.errors %}<div class="form-error">{{ form.amount.errors.0 }}</div>{% endif %}
+
+                <div class="amount-chips">
+                  <button type="button" class="amount-chip" data-percent="25">25% (UGX <span data-percent-value="25">0</span>)</button>
+                  <button type="button" class="amount-chip" data-percent="50">50% (UGX <span data-percent-value="50">0</span>)</button>
+                  <button type="button" class="amount-chip" data-percent="75">75% (UGX <span data-percent-value="75">0</span>)</button>
+                  <button type="button" class="amount-chip" data-full="true">Full Balance (UGX {{ loan.balance|floatformat:0|intcomma }})</button>
+                  <button type="button" class="amount-chip" data-suggested="true">Suggested (UGX {{ suggested_amount|default:0|floatformat:0|intcomma }})</button>
+                </div>
+              </div>
+
+              <p class="text-xs text-gray-500 mt-2">
+                Tip: Click “Use This Amount” then switch to “Custom” to adjust slightly.
+              </p>
+            </div>
+
+            <!-- Receipt -->
+            <div class="form-group">
+              <label for="{{ form.receipt.auto_id }}" class="form-label">Receipt / Reference</label>
+              {{ form.receipt }}
+              {% if form.receipt.errors %}<div class="form-error">{{ form.receipt.errors.0 }}</div>{% endif %}
+              <p class="text-xs text-gray-500 mt-2">Optional transaction reference</p>
+            </div>
+
+            <!-- Note -->
+            <div class="form-group md:col-span-2">
+              <label for="{{ form.note.auto_id }}" class="form-label">Payment Notes</label>
+              {{ form.note }}
+              {% if form.note.errors %}<div class="form-error">{{ form.note.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
+
+          <!-- Balance Preview -->
+          <div class="balance-preview">
+            <div class="balance-row">
+              <span class="balance-label">Current Balance:</span>
+              <span class="balance-value" id="current-balance">UGX {{ loan.balance|floatformat:2|intcomma }}</span>
+            </div>
+            <div class="balance-row">
+              <span class="balance-label">Payment Amount:</span>
+              <span class="balance-value" id="payment-amount-display">UGX 0.00</span>
+            </div>
+            <div class="balance-row">
+              <span class="balance-label">Balance After Payment:</span>
+              <span class="balance-value" id="after-payment-balance">UGX {{ loan.balance|floatformat:2|intcomma }}</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Actions -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4">
+        <div class="text-sm text-gray-500 flex items-center">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Verify all details before saving
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="{{ loan.get_absolute_url }}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" id="submit-btn" class="btn btn-primary">
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Save Payment Record
+          </button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_body %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const config = {
+    suggestedAmount: parseFloat('{{ suggested_amount|default:0|floatformat:2 }}') || 0,
+    remainingBalance: parseFloat('{{ loan.balance|floatformat:2 }}') || 0
+  };
+
+  // ✅ Correct DOM ids (auto_id)
+  const amountInput = document.getElementById('{{ form.amount.auto_id }}');
+  const dateInput = document.getElementById('{{ form.date.auto_id }}');
+
+  const suggestedTabBtn = document.querySelector('.tab-btn[data-tab="suggested"]');
+  const customTabBtn = document.querySelector('.tab-btn[data-tab="custom"]');
+  const suggestedContent = document.getElementById('tab-suggested-content');
+  const customContent = document.getElementById('tab-custom-content');
+
+  const useSuggestedBtn = document.getElementById('use-suggested-btn');
+  const amountChips = document.querySelectorAll('.amount-chip');
+  const submitBtn = document.getElementById('submit-btn');
+
+  const paymentAmountEl = document.getElementById('payment-amount-display');
+  const afterBalanceEl = document.getElementById('after-payment-balance');
+
+  function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-UG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0);
+  }
+
+  function updatePercentChips() {
+    document.querySelectorAll('[data-percent-value]').forEach(el => {
+      const percent = parseInt(el.closest('.amount-chip').dataset.percent || '0', 10);
+      const amount = (config.remainingBalance * percent / 100);
+      el.textContent = formatCurrency(amount);
+    });
+  }
+
+  function updateBalancePreview() {
+    const pay = parseFloat(amountInput?.value || '0') || 0;
+    const after = config.remainingBalance - pay;
+
+    if (paymentAmountEl) paymentAmountEl.textContent = `UGX ${formatCurrency(pay)}`;
+    if (afterBalanceEl)  afterBalanceEl.textContent  = `UGX ${formatCurrency(Math.max(0, after))}`;
+
+    if (pay > config.remainingBalance) {
+      if (afterBalanceEl) afterBalanceEl.style.color = '#ef4444';
+    } else {
+      if (afterBalanceEl) afterBalanceEl.style.color = '';
+    }
+  }
+
+  function setActiveTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+    if (suggestedContent) suggestedContent.classList.toggle('hidden', tab !== 'suggested');
+    if (customContent) customContent.classList.toggle('hidden', tab !== 'custom');
+    if (tab === 'custom') setTimeout(() => amountInput?.focus(), 50);
+  }
+
+  function setAmount(value) {
+    const v = parseFloat(value || '0') || 0;
+    const safe = Math.min(v, config.remainingBalance);
+    if (amountInput) amountInput.value = safe.toFixed(2);
+    updateBalancePreview();
+  }
+
+  function init() {
+    // Default date
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().split('T')[0];
+    }
+
+    updatePercentChips();
+
+    // Seed amount
+    if (amountInput && (!amountInput.value || parseFloat(amountInput.value) <= 0)) {
+      setAmount(config.suggestedAmount);
+    } else {
+      updateBalancePreview();
+    }
+  }
+
+  suggestedTabBtn?.addEventListener('click', () => setActiveTab('suggested'));
+  customTabBtn?.addEventListener('click', () => setActiveTab('custom'));
+
+  useSuggestedBtn?.addEventListener('click', () => {
+    setAmount(config.suggestedAmount);
+    setActiveTab('custom');
+  });
+
+  amountInput?.addEventListener('input', updateBalancePreview);
+  amountInput?.addEventListener('blur', () => {
+    const v = parseFloat(amountInput.value || '0');
+    if (!isNaN(v)) amountInput.value = v.toFixed(2);
+    updateBalancePreview();
+  });
+
+  amountChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (chip.dataset.full === 'true') setAmount(config.remainingBalance);
+      else if (chip.dataset.suggested === 'true') setAmount(config.suggestedAmount);
+      else if (chip.dataset.percent) setAmount(config.remainingBalance * (parseInt(chip.dataset.percent, 10) / 100));
+      setActiveTab('custom');
+    });
+  });
+
+  document.getElementById('payment-form')?.addEventListener('submit', function(e) {
+    const pay = parseFloat(amountInput?.value || '0') || 0;
+
+    if (pay <= 0) {
+      e.preventDefault();
+      alert('Please enter a valid payment amount');
+      amountInput?.focus();
+      return;
+    }
+    if (pay > config.remainingBalance) {
+      e.preventDefault();
+      alert('Payment amount cannot exceed remaining balance');
+      amountInput?.focus();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+      <svg class="btn-icon animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Processing...
+    `;
+  });
+
+  init();
+});
+</script>
+{% endblock %}

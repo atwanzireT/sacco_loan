@@ -1,0 +1,115 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Sign in — Vaulta express limited{% endblock %}</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Brand theme -->
+  <style>
+    :root{
+      --brand:#D59C2E;          /* primary gold */
+      --brand-grad:#f1c55a;     /* gradient end */
+      --brand-soft:#F3DFB1;     /* soft tint */
+      --brand-ring:rgba(213,156,46,.25);
+      --surface:#ffffff;
+      --muted:#f8fafc;
+      --text:#111827;
+      --subtext:#6b7280;
+      --border:#e5e7eb;
+    }
+    [data-theme="dark"]{
+      --surface:#0b0f14;
+      --muted:#0f172a;
+      --text:#e5e7eb;
+      --subtext:#94a3b8;
+      --border:#1f2937;
+      --brand-ring:rgba(213,156,46,.35);
+    }
+    .auth-card{
+      background:linear-gradient(135deg,var(--surface) 0%, var(--muted) 100%);
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow:0 12px 24px -12px rgba(0,0,0,.2);
+    }
+    .btn-brand{
+      width:100%;
+      border-radius:12px;
+      padding:.70rem 1rem;
+      background-image:linear-gradient(90deg,var(--brand),var(--brand-grad));
+      color:white;
+      font-weight:600;
+      box-shadow:0 6px 14px -6px rgba(0,0,0,.25);
+      transition:transform .08s ease, opacity .2s ease;
+    }
+    .btn-brand:hover{ opacity:.95; }
+    .btn-brand:active{ transform:translateY(1px); }
+    .btn-brand:focus{ outline:none; box-shadow:0 0 0 3px var(--brand-ring), 0 0 0 1.5px var(--brand); }
+
+    /* Ensure inputs look great even without widget classes */
+    .auth-form input[type="text"],
+    .auth-form input[type="email"],
+    .auth-form input[type="password"]{
+      width:100%;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:.675rem .875rem;
+      color:var(--text);
+      transition:border-color .2s, box-shadow .2s, background .2s;
+    }
+    .auth-form input::placeholder{ color:var(--subtext); opacity:.9; }
+    .auth-form input:focus{
+      outline:none;
+      border-color:var(--brand);
+      box-shadow:0 0 0 3px var(--brand-ring);
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--brand-soft)_0%,_#f8fafc_35%,_white_100%)] flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <!-- Brand header -->
+    <div class="mb-6 text-center">
+      <div class="flex items-center justify-center">
+        <img
+          src="https://i.pinimg.com/736x/52/11/70/52117045ec435a81bd8c499a3964750f.jpg"
+          alt="Vaulta express limited"
+          class="h-12 md:h-14 object-contain rounded"
+          loading="lazy">
+        <div class="ml-3">
+          <h1 class="text-xl md:text-2xl font-bold" style="color:var(--text)">Vaulta express limited</h1>
+          {% block heading_sub %}<p class="text-sm" style="color:var(--subtext)">Secure access portal</p>{% endblock %}
+        </div>
+      </div>
+
+      {% if messages %}
+        <div class="mt-4 space-y-2">
+          {% for message in messages %}
+            <div class="rounded-lg border px-4 py-3 text-sm
+                        {% if message.tags == 'success' %} border-emerald-200 bg-emerald-50 text-emerald-800
+                        {% elif message.tags == 'error' %} border-red-200 bg-red-50 text-red-800
+                        {% else %} border-slate-200 bg-white text-slate-700 {% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Card -->
+    <div class="auth-card p-6 md:p-7">
+      {% block content %}{% endblock %}
+    </div>
+
+    <p class="mt-6 text-center text-sm text-slate-500">
+      &copy; {{ now|date:"Y" }} Vaulta express limited
+    </p>
+  </div>
+</body>
+</html>

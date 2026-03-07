@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Member Statement • {{ member.full_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div>
+      <p class="text-sm font-medium text-amber-700">Member Account Statement</p>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ member.full_name }}</h1>
+      <p class="mt-2 text-sm text-slate-600">
+        Member ID: {{ member.member_id|default:member.id }} • Phone: {{ member.phone }}
+      </p>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="window.print()" class="btn-secondary">Print</button>
+      <a href="{% url 'sacco:member_detail' member.pk %}" class="btn-primary">Back to Member</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Total Loans</p>
+      <p class="mt-2 text-3xl font-bold text-slate-900">{{ summary.total_loans }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Total Borrowed</p>
+      <p class="mt-2 text-3xl font-bold text-slate-900">UGX {{ summary.total_borrowed|floatformat:0|intcomma }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Total Paid</p>
+      <p class="mt-2 text-3xl font-bold text-emerald-700">UGX {{ summary.total_paid|floatformat:0|intcomma }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Total Balance</p>
+      <p class="mt-2 text-3xl font-bold text-rose-700">UGX {{ summary.total_balance|floatformat:0|intcomma }}</p>
+    </div>
+  </div>
+
+  <div class="rounded-3xl border bg-white p-6 shadow-sm">
+    <h2 class="text-xl font-semibold text-slate-900">Loan History</h2>
+    <div class="mt-4 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="border-b text-left text-slate-500">
+            <th class="px-3 py-3">Loan ID</th>
+            <th class="px-3 py-3">Start Date</th>
+            <th class="px-3 py-3">Due Date</th>
+            <th class="px-3 py-3">Principal</th>
+            <th class="px-3 py-3">Expected</th>
+            <th class="px-3 py-3">Paid</th>
+            <th class="px-3 py-3">Balance</th>
+            <th class="px-3 py-3">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for loan in loans %}
+          <tr class="border-b last:border-b-0">
+            <td class="px-3 py-3">
+              <a href="{% url 'sacco:loan_statement' loan.pk %}" class="font-semibold text-amber-700 hover:underline">
+                {{ loan.loan_id|default:loan.id }}
+              </a>
+            </td>
+            <td class="px-3 py-3">{{ loan.start_date }}</td>
+            <td class="px-3 py-3">{{ loan.due_date }}</td>
+            <td class="px-3 py-3">UGX {{ loan.principal|floatformat:0|intcomma }}</td>
+            <td class="px-3 py-3">UGX {{ loan.expected_total|floatformat:0|intcomma }}</td>
+            <td class="px-3 py-3 text-emerald-700">UGX {{ loan.amount_paid_a|floatformat:0|intcomma }}</td>
+            <td class="px-3 py-3 text-rose-700 font-semibold">UGX {{ loan.balance_a|floatformat:0|intcomma }}</td>
+            <td class="px-3 py-3">
+              <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {% if loan.status == 'OPEN' %}bg-amber-50 text-amber-700{% else %}bg-emerald-50 text-emerald-700{% endif %}">
+                {{ loan.status }}
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="px-3 py-10 text-center text-slate-500">This member has no loans.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="rounded-3xl border bg-white p-6 shadow-sm">
+    <h2 class="text-xl font-semibold text-slate-900">Repayment History</h2>
+    <div class="mt-4 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="border-b text-left text-slate-500">
+            <th class="px-3 py-3">Date</th>
+            <th class="px-3 py-3">Loan ID</th>
+            <th class="px-3 py-3">Method</th>
+            <th class="px-3 py-3">Receipt</th>
+            <th class="px-3 py-3">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in payments %}
+          <tr class="border-b last:border-b-0">
+            <td class="px-3 py-3">{{ payment.date }}</td>
+            <td class="px-3 py-3">{{ payment.loan.loan_id|default:payment.loan.id }}</td>
+            <td class="px-3 py-3">{{ payment.method|default:"—" }}</td>
+            <td class="px-3 py-3">{{ payment.receipt|default:"—" }}</td>
+            <td class="px-3 py-3 font-semibold text-emerald-700">UGX {{ payment.amount|floatformat:0|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-3 py-10 text-center text-slate-500">No repayments found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

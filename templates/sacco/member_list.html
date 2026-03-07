@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Members — Great Pearl SACCO{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root{
+    --brand:#D59C2E;
+    --brand-50:#FBF5E8;
+    --brand-100:#F6E9CC;
+    --brand-200:#EED299;
+    --brand-300:#E5BC66;
+    --brand-700:#A6781F;
+    --ring: rgba(213,156,46,.18);
+    --shadow: 0 10px 25px -15px rgba(0,0,0,.18);
+  }
+
+  .page-wrap{max-width:80rem;margin:0 auto;}
+
+  .gradient-border{
+    position:relative;
+    background:linear-gradient(#fff,#fff) padding-box,
+               linear-gradient(135deg,var(--brand) 0%, #f1c55a 100%) border-box;
+    border:1px solid transparent;
+  }
+
+  .input{
+    width:100%;
+    border:1px solid #d1d5db;
+    border-radius:.95rem;
+    padding:.75rem .95rem;
+    font-size:.875rem;
+    background:#fff;
+    transition:.15s ease;
+  }
+  .input:focus{
+    outline:none;
+    border-color:var(--brand);
+    box-shadow:0 0 0 4px var(--ring);
+  }
+  .select{ padding-right:2.2rem; }
+
+  .chip{
+    display:inline-flex;align-items:center;gap:.4rem;
+    border-radius:9999px;padding:.35rem .65rem;font-size:.75rem;
+    border:1px solid rgba(213,156,46,.35);
+    background:rgba(213,156,46,.08);
+    color:var(--brand-700);
+    white-space:nowrap;
+  }
+
+  .th{
+    font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;
+    color:#6b7280;font-weight:800;
+  }
+
+  .row-hover{transition:.15s ease;}
+  .row-hover:hover{background:rgba(213,156,46,.05);}
+
+  .avatar{
+    width:40px;height:40px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--brand),#f1c55a);
+    color:#fff;font-weight:900;font-size:.9rem;
+    box-shadow:0 10px 22px -16px rgba(0,0,0,.35);
+  }
+
+  .pill{
+    display:inline-flex;align-items:center;gap:.35rem;
+    border-radius:9999px;padding:.28rem .62rem;
+    font-size:.75rem;font-weight:800;
+    border:1px solid #e5e7eb;background:#f9fafb;color:#374151;
+    white-space:nowrap;
+  }
+  .pill-open{
+    border-color:rgba(213,156,46,.35);
+    background:rgba(213,156,46,.10);
+    color:var(--brand-700);
+  }
+  .pill-zero{background:#f3f4f6;color:#6b7280;}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.9;}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+    padding:.65rem 1rem;border-radius:.9rem;font-size:.875rem;font-weight:900;
+    border:1px solid transparent;cursor:pointer;transition:all .2s ease;
+    user-select:none;white-space:nowrap;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 18px -16px rgba(0,0,0,.35);}
+  .btn-primary{color:#fff;background:linear-gradient(to right,var(--brand),#f1c55a);}
+  .btn-outline{background:#fff;border-color:#e5e7eb;color:#374151;}
+  .btn-outline:hover{background:#f9fafb;}
+  .btn-icon{width:1rem;height:1rem;}
+
+  /* Row action pills */
+  .action-pill{
+    display:inline-flex;align-items:center;gap:.35rem;
+    padding:.42rem .78rem;border-radius:9999px;
+    font-size:.75rem;font-weight:900;line-height:1;
+    border:1px solid transparent;transition:all .2s ease;
+  }
+  .action-pill:hover{transform:translateY(-1px);box-shadow:0 8px 16px -14px rgba(0,0,0,.4);}
+  .btn-view{color:var(--brand-700);background:rgba(213,156,46,.10);border-color:rgba(213,156,46,.35);}
+  .btn-view:hover{background:rgba(213,156,46,.18);}
+  .btn-edit{color:#374151;background:#f3f4f6;border-color:#e5e7eb;}
+  .btn-edit:hover{background:#e5e7eb;}
+  .btn-newloan{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe;}
+  .btn-newloan:hover{background:#dbeafe;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50/40 py-6">
+  <div class="page-wrap px-4 sm:px-6 lg:px-8">
+
+    <!-- Header -->
+    <div class="mb-6">
+      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-extrabold text-gray-900">Member Directory</h1>
+          <p class="text-gray-600 mt-1">Browse, search and manage SACCO members</p>
+        </div>
+
+        {% if request.user.is_authenticated %}
+          <a href="{% url 'sacco:member_create' %}" class="btn btn-primary">
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            New Member
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="gradient-border rounded-2xl bg-white p-5 sm:p-6 mb-6">
+      <form method="get" id="filter-form" class="space-y-4">
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+          <!-- Search -->
+          <div class="lg:col-span-7">
+            <label class="block text-xs font-extrabold text-gray-600 uppercase tracking-wider mb-2">Search</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </span>
+
+              <input type="text" name="q" value="{{ q }}"
+                     placeholder="Name, phone, NIN, village, subcounty..."
+                     class="input pl-10">
+
+              {% if q %}
+                <a href="{% url 'sacco:member_list' %}"
+                   class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-700"
+                   title="Clear search">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </a>
+              {% endif %}
+            </div>
+            <div class="text-xs text-gray-500 mt-2">Press Enter to search</div>
+          </div>
+
+          <!-- Sort -->
+          <div class="lg:col-span-3">
+            <label class="block text-xs font-extrabold text-gray-600 uppercase tracking-wider mb-2">Sort</label>
+            <select name="order" class="input select js-autosubmit">
+              <option value="name" {% if order == "name" %}selected{% endif %}>Name (A–Z)</option>
+              <option value="-name" {% if order == "-name" %}selected{% endif %}>Name (Z–A)</option>
+              <option value="joined" {% if order == "joined" %}selected{% endif %}>Joined (Oldest)</option>
+              <option value="-joined" {% if order == "-joined" %}selected{% endif %}>Joined (Newest)</option>
+              <option value="loans" {% if order == "loans" %}selected{% endif %}>Loan Value (Low)</option>
+              <option value="-loans" {% if order == "-loans" %}selected{% endif %}>Loan Value (High)</option>
+              <option value="balance" {% if order == "balance" %}selected{% endif %}>Balance (Low)</option>
+              <option value="-balance" {% if order == "-balance" %}selected{% endif %}>Balance (High)</option>
+              <option value="lastloan" {% if order == "lastloan" %}selected{% endif %}>Last Loan (Old)</option>
+              <option value="-lastloan" {% if order == "-lastloan" %}selected{% endif %}>Last Loan (Recent)</option>
+            </select>
+          </div>
+
+          <!-- Per page -->
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-extrabold text-gray-600 uppercase tracking-wider mb-2">Show</label>
+            <select name="per_page" class="input select js-autosubmit">
+              {% for n in per_page_options %}
+                <option value="{{ n }}" {% if per_page|stringformat:"s" == n|stringformat:"s" %}selected{% endif %}>{{ n }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Active filter chips -->
+        <div class="flex flex-wrap gap-2 pt-1">
+          {% if q %}<span class="chip">Search: “{{ q }}”</span>{% endif %}
+          {% if order %}<span class="chip">Sort: {{ order }}</span>{% endif %}
+          {% if per_page %}<span class="chip">Show: {{ per_page }}</span>{% endif %}
+        </div>
+
+        <div class="text-sm text-gray-600">
+          Showing <span class="font-extrabold">{{ page.start_index }}</span>–<span class="font-extrabold">{{ page.end_index }}</span>
+          of <span class="font-extrabold">{{ page.paginator.count|intcomma }}</span> members
+        </div>
+      </form>
+    </div>
+
+    <!-- Table -->
+    <div class="gradient-border rounded-2xl bg-white overflow-hidden">
+      {% if page.object_list %}
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-4 text-left th">Member</th>
+                <th class="px-6 py-4 text-left th">Contact</th>
+                <th class="px-6 py-4 text-left th">Location</th>
+                <th class="px-6 py-4 text-left th">Joined</th>
+                <th class="px-6 py-4 text-left th">Loans</th>
+                <th class="px-6 py-4 text-right th">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-gray-200">
+              {% for member in page.object_list %}
+                <tr class="row-hover">
+
+                  <!-- Member -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="avatar mr-3">
+                        {{ member.first_name|default:"?"|first|upper }}
+                      </div>
+                      <div>
+                        <a href="{{ member.get_absolute_url }}"
+                           class="text-sm font-extrabold text-gray-900 hover:text-[color:var(--brand)]">
+                          {{ member.full_name }}
+                        </a>
+                        <div class="text-xs text-gray-500 mt-0.5">
+                          {% if member.member_id %}{{ member.member_id }}{% else %}—{% endif %}
+                          {% if member.nin %} • NIN: {{ member.nin }}{% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Contact -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-900">{{ member.phone }}</div>
+                  </td>
+
+                  <!-- Location -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">
+                      {% if member.village %}{{ member.village }}{% else %}<span class="text-gray-400">—</span>{% endif %}
+                    </div>
+                    <div class="text-xs text-gray-500">
+                      {% if member.subcounty %}{{ member.subcounty }}{% else %}<span class="text-gray-400">—</span>{% endif %}
+                    </div>
+                  </td>
+
+                  <!-- Joined -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-900">{{ member.joined_on|date:"M j, Y" }}</div>
+                    <div class="text-xs text-gray-500">{{ member.joined_on|timesince }} ago</div>
+                  </td>
+
+                  <!-- Loans -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    {% with total=member.total_loans|default:member.loan_count open=member.open_loans|default:0 %}
+                      {% if total > 0 %}
+                        <span class="pill">
+                          <span class="dot"></span>
+                          Total: {{ total }}
+                        </span>
+                        <span class="pill pill-open ml-2">
+                          <span class="dot"></span>
+                          Open: {{ open }}
+                        </span>
+                      {% else %}
+                        <span class="pill pill-zero">
+                          <span class="dot"></span>
+                          No loans
+                        </span>
+                      {% endif %}
+                    {% endwith %}
+                  </td>
+
+                  <!-- Actions -->
+                  <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <div class="flex items-center justify-end gap-2">
+
+                      <a href="{{ member.get_absolute_url }}" class="action-pill btn-view" title="View member">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7
+                                   -1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        View
+                      </a>
+
+                      {% if request.user.is_authenticated %}
+                        <a href="{% url 'sacco:member_update' member.id %}" class="action-pill btn-edit" title="Edit member">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                          Edit
+                        </a>
+                      {% endif %}
+
+                    </div>
+                  </td>
+
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      {% else %}
+        <!-- Empty -->
+        <div class="text-center py-12">
+          <h3 class="text-lg font-extrabold text-gray-900 mb-2">No members found</h3>
+          <p class="text-gray-500 mb-6 max-w-md mx-auto">
+            {% if q %}
+              No members match your search criteria. Try adjusting your search terms.
+            {% else %}
+              Get started by adding your first member to the SACCO.
+            {% endif %}
+          </p>
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'sacco:member_create' %}" class="btn btn-primary">
+              Add First Member
+            </a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Pagination (windowed) -->
+    {% if page.paginator.num_pages > 1 %}
+      <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="text-sm text-gray-700">
+          Page <span class="font-extrabold">{{ page.number }}</span> of <span class="font-extrabold">{{ page.paginator.num_pages }}</span>
+        </div>
+
+        <div class="flex items-center flex-wrap gap-2">
+          {% if page.has_previous %}
+            <a href="?{{ base_query }}&page=1" class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;">First</a>
+            <a href="?{{ base_query }}&page={{ page.previous_page_number }}" class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;">Prev</a>
+          {% else %}
+            <span class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;opacity:.5;cursor:not-allowed;">First</span>
+            <span class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;opacity:.5;cursor:not-allowed;">Prev</span>
+          {% endif %}
+
+          {% for n in page.paginator.page_range %}
+            {% if n >= page.number|add:"-2" and n <= page.number|add:"2" %}
+              {% if n == page.number %}
+                <span class="btn" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;border-color:rgba(213,156,46,.35);background:rgba(213,156,46,.10);color:var(--brand-700);">
+                  {{ n }}
+                </span>
+              {% else %}
+                <a href="?{{ base_query }}&page={{ n }}" class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;">
+                  {{ n }}
+                </a>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+
+          {% if page.has_next %}
+            <a href="?{{ base_query }}&page={{ page.next_page_number }}" class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;">Next</a>
+            <a href="?{{ base_query }}&page={{ page.paginator.num_pages }}" class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;">Last</a>
+          {% else %}
+            <span class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;opacity:.5;cursor:not-allowed;">Next</span>
+            <span class="btn btn-outline" style="padding:.45rem .8rem;border-radius:.75rem;font-size:.8rem;opacity:.5;cursor:not-allowed;">Last</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filter-form');
+
+  // autosubmit for select filters
+  document.querySelectorAll('.js-autosubmit').forEach(el => {
+    el.addEventListener('change', () => form.submit());
+  });
+
+  // submit if search cleared
+  const searchInput = document.querySelector('input[name="q"]');
+  if (searchInput) {
+    let last = searchInput.value || '';
+    searchInput.addEventListener('input', function(){
+      if (last && this.value === '') form.submit();
+      last = this.value;
+    });
+  }
+});
+</script>
+{% endblock %}

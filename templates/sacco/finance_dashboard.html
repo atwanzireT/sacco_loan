@@ -1,0 +1,729 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Finance Dashboard - Vaulta Capital Growth{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root{
+    --brand:#D59C2E;
+    --brand-grad:#f1c55a;
+    --brand-soft:#F8EDD1;
+    --brand-ring:rgba(213,156,46,.18);
+  }
+  .stat-card {
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  }
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  .progress-thin { height: 6px; border-radius: 9999px; }
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, var(--brand) 0%, var(--brand-grad) 100%) border-box;
+    border: 1px solid transparent;
+  }
+  .section-header { border-left: 4px solid var(--brand); }
+  .metric-badge { font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+  .table-hover tbody tr { transition: all 0.2s ease; }
+  .table-hover tbody tr:hover {
+    background-color: rgba(213,156,46,0.06);
+    transform: translateX(2px);
+  }
+  .chart-container { position: relative; height: 210px; }
+  .kpi-icon {
+    width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-grad) 100%);
+  }
+  .link-brand{ color:var(--brand); }
+  .link-brand:hover{ opacity:.85; }
+
+  .mini-card{
+    border:1px solid #e5e7eb;
+    border-radius:14px;
+    padding:14px;
+    background:#fff;
+  }
+  .pill{
+    display:inline-flex;align-items:center;gap:.4rem;
+    font-size:.75rem;font-weight:600;
+    padding:.25rem .6rem;border-radius:9999px;
+  }
+  .pill-warning{ background:#FEF3C7; color:#92400E; }
+  .pill-success{ background:#DCFCE7; color:#166534; }
+  .pill-danger{ background:#FEE2E2; color:#991B1B; }
+  .pill-neutral{ background:#F3F4F6; color:#374151; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% now "Y-m-d" as today_iso %}
+
+<div class="min-h-screen bg-gray-50/30 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div class="mb-4 md:mb-0">
+          <h1 class="text-2xl font-bold text-gray-900">Finance Dashboard</h1>
+          <p class="text-gray-600 mt-1">Loan portfolio overview, collections, overdue risk, processing fees & expenses</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
+            <div class="text-sm text-gray-500">Last updated</div>
+            <div class="font-medium text-gray-900">
+              {% now "M j, Y" %} at {% now "g:i A" %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Cards (6) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+
+      <!-- Total Principal -->
+      <div class="stat-card rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div class="kpi-icon">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Principal</div>
+        <div class="mt-1 text-2xl font-bold text-gray-900">UGX {{ total_principal|floatformat:0|intcomma }}</div>
+        <div class="mt-2 text-xs text-gray-500">Sum of principal on all loans</div>
+      </div>
+
+      <!-- Expected Collections -->
+      <div class="stat-card rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div class="kpi-icon">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Expected Collections</div>
+        <div class="mt-1 text-2xl font-bold text-gray-900">UGX {{ total_expected|floatformat:0|intcomma }}</div>
+        <div class="mt-2 text-xs text-gray-500">Expected total (principal + interest)</div>
+      </div>
+
+      <!-- Collected -->
+      <div class="stat-card rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div class="kpi-icon">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Collected</div>
+        <div class="mt-1 text-2xl font-bold text-gray-900">UGX {{ total_paid|floatformat:0|intcomma }}</div>
+        <div class="mt-2 flex items-center justify-between">
+          <span class="text-xs text-gray-500">
+            Collection rate:
+            <span class="font-semibold" style="color:var(--brand)">{{ collection_rate_pct }}%</span>
+          </span>
+        </div>
+        <div class="mt-2 w-full bg-gray-200 rounded-full progress-thin">
+          <div class="progress-thin rounded-full" style="width: {{ collection_rate_pct }}%; background-color: var(--brand);"></div>
+        </div>
+      </div>
+
+      <!-- Outstanding -->
+      <div class="stat-card rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div class="kpi-icon">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Outstanding Balance</div>
+        <div class="mt-1 text-2xl font-bold text-gray-900">UGX {{ total_balance|floatformat:0|intcomma }}</div>
+        <div class="mt-2 text-xs text-gray-500">Expected - paid</div>
+      </div>
+
+      <!-- ✅ Total Processing Fees -->
+      <div class="stat-card rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div class="kpi-icon">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1m9-5a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Processing Fees</div>
+        <div class="mt-1 text-2xl font-bold text-gray-900">UGX {{ total_processing_fees|default:0|floatformat:0|intcomma }}</div>
+        <div class="mt-2 text-xs text-gray-500">Total fees received</div>
+      </div>
+
+      <!-- ✅ Total Expenses -->
+      <div class="stat-card rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div class="kpi-icon">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12h6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v13a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Expenses</div>
+        <div class="mt-1 text-2xl font-bold text-gray-900">UGX {{ total_expenses|default:0|floatformat:0|intcomma }}</div>
+        <div class="mt-2 text-xs text-gray-500">All approved & paid expenses</div>
+      </div>
+
+    </div>
+
+    <!-- Portfolio + Overdue -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div class="lg:col-span-2 gradient-border rounded-xl p-6 bg-white">
+        <div class="flex items-center mb-6 section-header pl-3">
+          <h2 class="text-lg font-semibold text-gray-900">Portfolio Overview</h2>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="text-center p-4 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-gray-900">{{ counts.open_loans|intcomma }}</div>
+            <div class="text-sm text-gray-600 mt-1">Open Loans</div>
+          </div>
+          <div class="text-center p-4 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold" style="color:var(--brand)">{{ counts.closed_loans|intcomma }}</div>
+            <div class="text-sm text-gray-600 mt-1">Closed Loans</div>
+          </div>
+          <div class="text-center p-4 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-red-600">{{ counts.overdue_loans|intcomma }}</div>
+            <div class="text-sm text-gray-600 mt-1">Overdue</div>
+          </div>
+          <div class="text-center p-4 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-gray-900">{{ counts.open_loans|add:counts.closed_loans|intcomma }}</div>
+            <div class="text-sm text-gray-600 mt-1">Total Loans</div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <canvas id="portfolioChart"></canvas>
+        </div>
+      </div>
+
+      <div class="gradient-border rounded-xl p-6 bg-white">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center section-header pl-3">
+            <h2 class="text-lg font-semibold text-gray-900">Overdue Analysis</h2>
+          </div>
+          <span class="metric-badge bg-red-100 text-red-800">{{ counts.overdue_loans }} loans</span>
+        </div>
+
+        {% with total_overdue=counts.overdue_loans %}
+          <div class="space-y-4">
+            {% with b1=overdue_buckets.b1_7 b2=overdue_buckets.b8_30 b3=overdue_buckets.b31_60 b4=overdue_buckets.b61_plus %}
+            <div>
+              <div class="flex justify-between text-sm text-gray-600 mb-1">
+                <span>1–7 days</span><span class="font-medium">{{ b1|default:0 }}</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="h-2 rounded-full" style="background:#F59E0B;width:{% if total_overdue > 0 %}{% widthratio b1 total_overdue 100 %}{% else %}0{% endif %}%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-sm text-gray-600 mb-1">
+                <span>8–30 days</span><span class="font-medium">{{ b2|default:0 }}</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="h-2 rounded-full" style="background:#FB923C;width:{% if total_overdue > 0 %}{% widthratio b2 total_overdue 100 %}{% else %}0{% endif %}%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-sm text-gray-600 mb-1">
+                <span>31–60 days</span><span class="font-medium">{{ b3|default:0 }}</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="h-2 rounded-full" style="background:#EF4444;width:{% if total_overdue > 0 %}{% widthratio b3 total_overdue 100 %}{% else %}0{% endif %}%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-sm text-gray-600 mb-1">
+                <span>61+ days</span><span class="font-medium">{{ b4|default:0 }}</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="h-2 rounded-full" style="background:#B91C1C;width:{% if total_overdue > 0 %}{% widthratio b4 total_overdue 100 %}{% else %}0{% endif %}%"></div>
+              </div>
+            </div>
+            {% endwith %}
+          </div>
+        {% endwith %}
+      </div>
+    </div>
+
+    <!-- ✅ Expenses Summary + Extra Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div class="lg:col-span-1 gradient-border rounded-xl p-6 bg-white">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center section-header pl-3">
+            <h2 class="text-lg font-semibold text-gray-900">Expenses Summary</h2>
+          </div>
+          <a class="text-sm font-medium link-brand" href="{% url 'sacco:expense_list' %}">View</a>
+        </div>
+
+        <div class="space-y-3">
+          <div class="mini-card flex items-center justify-between">
+            <div class="text-sm text-gray-600">Pending</div>
+            <div class="pill pill-warning">{{ expense_counts.pending|default:0 }} </div>
+          </div>
+          <div class="mini-card flex items-center justify-between">
+            <div class="text-sm text-gray-600">Approved</div>
+            <div class="pill pill-success">{{ expense_counts.approved|default:0 }}</div>
+          </div>
+          <div class="mini-card flex items-center justify-between">
+            <div class="text-sm text-gray-600">Paid</div>
+            <div class="pill pill-success">{{ expense_counts.paid|default:0 }}</div>
+          </div>
+          <div class="mini-card flex items-center justify-between">
+            <div class="text-sm text-gray-600">Rejected</div>
+            <div class="pill pill-danger">{{ expense_counts.rejected|default:0 }}</div>
+          </div>
+
+          <div class="mini-card">
+            <div class="text-sm text-gray-600">Total Expenses Value</div>
+            <div class="text-xl font-bold text-gray-900 mt-1">UGX {{ total_expenses|default:0|floatformat:0|intcomma }}</div>
+            <div class="text-xs text-gray-500 mt-1">Approved + Paid totals</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-2 gradient-border rounded-xl p-6 bg-white">
+        <div class="flex items-center mb-6 section-header pl-3">
+          <h2 class="text-lg font-semibold text-gray-900">Expenses & Processing Fees (Last 30 Days)</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div class="text-sm font-medium text-gray-700 mb-2">Expenses Trend</div>
+            <div class="chart-container">
+              <canvas id="expensesChart"></canvas>
+            </div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-700 mb-2">Processing Fees Trend</div>
+            <div class="chart-container">
+              <canvas id="feesChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div class="text-xs text-gray-500">Expenses (30 days)</div>
+            <div class="text-lg font-bold text-gray-900">UGX {{ expenses_30_total|default:0|floatformat:0|intcomma }}</div>
+          </div>
+          <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div class="text-xs text-gray-500">Processing Fees (30 days)</div>
+            <div class="text-lg font-bold text-gray-900">UGX {{ processing_fees_30_total|default:0|floatformat:0|intcomma }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trend + Methods -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div class="lg:col-span-2 gradient-border rounded-xl p-6 bg-white">
+        <div class="flex items-center mb-6 section-header pl-3">
+          <h2 class="text-lg font-semibold text-gray-900">Collections Trend (Last 30 Days)</h2>
+        </div>
+        <div class="chart-container">
+          <canvas id="collectionsChart"></canvas>
+        </div>
+      </div>
+
+      <div class="gradient-border rounded-xl p-6 bg-white">
+        <div class="flex items-center mb-6 section-header pl-3">
+          <h2 class="text-lg font-semibold text-gray-900">Payment Methods (Last 30 Days)</h2>
+        </div>
+        <div class="chart-container mb-4">
+          <canvas id="paymentMethodsChart"></canvas>
+        </div>
+        <div class="space-y-3">
+          {% for row in payment_breakdown_30 %}
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center">
+              <div class="w-3 h-3 rounded-full" style="background:var(--brand);margin-right:.75rem;"></div>
+              <span class="text-sm font-medium text-gray-700">{{ row.method|default:"Unspecified" }}</span>
+            </div>
+            <span class="text-sm font-semibold text-gray-900">UGX {{ row.total|floatformat:0|intcomma }}</span>
+          </div>
+          {% empty %}
+          <div class="text-center text-gray-500 py-4">No payments recorded</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Due Soon + Overdue Loans -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+      <div class="gradient-border rounded-xl bg-white overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center section-header pl-3">
+              <h2 class="text-lg font-semibold text-gray-900">Due in Next 7 Days</h2>
+            </div>
+            <span class="metric-badge" style="background:rgba(213,156,46,.15);color:var(--brand)">{{ due_soon_loans|length }} loans</span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full table-hover">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200">
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Loan ID</th>
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Member</th>
+                <th class="text-right py-3 px-6 text-sm font-medium text-gray-500">Due Date</th>
+                <th class="text-right py-3 px-6 text-sm font-medium text-gray-500">Balance</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              {% for loan in due_soon_loans %}
+              <tr>
+                <td class="py-3 px-6">
+                  <a href="{{ loan.get_absolute_url }}" class="text-sm font-medium link-brand">
+                    {{ loan.loan_id|default:loan.id }}
+                  </a>
+                </td>
+                <td class="py-3 px-6">
+                  <div class="text-sm font-medium text-gray-900">{{ loan.member.full_name|default:loan.member }}</div>
+                  <div class="text-xs text-gray-500">{{ loan.member.phone }}</div>
+                </td>
+                <td class="py-3 px-6 text-right">
+                  <div class="text-sm font-medium text-gray-900">{{ loan.due_date|date:"M j, Y" }}</div>
+                </td>
+                <td class="py-3 px-6 text-right">
+                  <div class="text-sm font-semibold text-gray-900">UGX {{ loan.balance_a|floatformat:0|intcomma }}</div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="py-8 px-6 text-center text-gray-500">No loans due in the next 7 days</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="gradient-border rounded-xl bg-white overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center section-header pl-3">
+              <h2 class="text-lg font-semibold text-gray-900">Overdue Loans</h2>
+            </div>
+            <span class="metric-badge bg-red-100 text-red-800">{{ overdue_loans|length }} loans</span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full table-hover">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200">
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Loan ID</th>
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Member</th>
+                <th class="text-right py-3 px-6 text-sm font-medium text-gray-500">Due Date</th>
+                <th class="text-right py-3 px-6 text-sm font-medium text-gray-500">Balance</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              {% for loan in overdue_loans %}
+              <tr>
+                <td class="py-3 px-6">
+                  <a href="{{ loan.get_absolute_url }}" class="text-sm font-medium link-brand">
+                    {{ loan.loan_id|default:loan.id }}
+                  </a>
+                </td>
+                <td class="py-3 px-6">
+                  <div class="text-sm font-medium text-gray-900">{{ loan.member.full_name|default:loan.member }}</div>
+                  <div class="text-xs text-gray-500">{{ loan.member.phone }}</div>
+                </td>
+                <td class="py-3 px-6 text-right">
+                  <div class="text-sm font-medium text-red-600">{{ loan.due_date|date:"M j, Y" }}</div>
+                  <div class="text-xs text-red-500">Overdue</div>
+                </td>
+                <td class="py-3 px-6 text-right">
+                  <div class="text-sm font-semibold text-red-600">UGX {{ loan.balance_a|floatformat:0|intcomma }}</div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="py-8 px-6 text-center text-gray-500">No overdue loans 🎉</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Members + Recent Payments -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div class="gradient-border rounded-xl bg-white overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex items-center section-header pl-3">
+            <h2 class="text-lg font-semibold text-gray-900">Top Members by Outstanding Balance</h2>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full table-hover">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200">
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Member</th>
+                <th class="text-center py-3 px-6 text-sm font-medium text-gray-500">Loans</th>
+                <th class="text-right py-3 px-6 text-sm font-medium text-gray-500">Balance</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              {% for m in top_members %}
+              <tr>
+                <td class="py-3 px-6">
+                  <a href="{% url 'sacco:member_detail' m.id %}" class="text-sm font-medium link-brand">
+                    {{ m.full_name }}
+                  </a>
+                </td>
+                <td class="py-3 px-6 text-center">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        style="background:rgba(213,156,46,.12);color:var(--brand)">
+                    {{ m.loans_count }}
+                  </span>
+                </td>
+                <td class="py-3 px-6 text-right">
+                  <div class="text-sm font-semibold text-gray-900">UGX {{ m.balance_a|floatformat:0|intcomma }}</div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="py-8 px-6 text-center text-gray-500">No member data available</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="gradient-border rounded-xl bg-white overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center section-header pl-3">
+              <h2 class="text-lg font-semibold text-gray-900">Recent Payments</h2>
+            </div>
+            <a href="{% url 'sacco:loan_list' %}" class="text-sm font-medium link-brand">View Loans</a>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full table-hover">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200">
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Date</th>
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Loan</th>
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Method</th>
+                <th class="text-right py-3 px-6 text-sm font-medium text-gray-500">Amount</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              {% for p in recent_payments %}
+              <tr>
+                <td class="py-3 px-6">
+                  <div class="text-sm font-medium text-gray-900">{{ p.date|date:"M j, Y" }}</div>
+                </td>
+                <td class="py-3 px-6">
+                  <a href="{{ p.loan.get_absolute_url }}" class="text-sm font-medium link-brand">
+                    {{ p.loan.loan_id|default:p.loan.id }}
+                  </a>
+                  <div class="text-xs text-gray-500">{{ p.loan.member.full_name|default:p.loan.member }}</div>
+                </td>
+                <td class="py-3 px-6">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    {{ p.method|default:"-" }}
+                  </span>
+                </td>
+                <td class="py-3 px-6 text-right">
+                  <div class="text-sm font-semibold" style="color:var(--brand)">UGX {{ p.amount|floatformat:0|intcomma }}</div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="py-8 px-6 text-center text-gray-500">No recent payments</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  (function() {
+    const brand = 'rgb(213, 156, 46)';
+    const brandA12 = 'rgba(213, 156, 46, 0.12)';
+    const brandA80 = 'rgba(213, 156, 46, 0.85)';
+
+    // Portfolio Chart
+    const portfolioCtx = document.getElementById('portfolioChart');
+    if (portfolioCtx && window.Chart) {
+      new Chart(portfolioCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Open Loans', 'Closed Loans', 'Overdue Loans'],
+          datasets: [{
+            data: [ {{ counts.open_loans|default:0 }}, {{ counts.closed_loans|default:0 }}, {{ counts.overdue_loans|default:0 }} ],
+            backgroundColor: [
+              'rgba(59, 130, 246, 0.85)',
+              brandA80,
+              'rgba(239, 68, 68, 0.85)'
+            ],
+            borderColor: ['rgb(59,130,246)', brand, 'rgb(239,68,68)'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 18 } }
+          },
+          cutout: '70%'
+        }
+      });
+    }
+
+    // Collections Trend
+    const collectionsCtx = document.getElementById('collectionsChart');
+    if (collectionsCtx && window.Chart) {
+      const labels = {{ payments_ts_30.labels|default:"[]"|safe }};
+      const values = {{ payments_ts_30.values|default:"[]"|safe }};
+      new Chart(collectionsCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Daily Collections',
+            data: values,
+            tension: 0.4,
+            borderColor: brand,
+            backgroundColor: brandA12,
+            fill: true,
+            pointBackgroundColor: brand,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => 'UGX ' + Intl.NumberFormat().format(v) }
+            }
+          }
+        }
+      });
+    }
+
+    // Payment Methods Pie
+    const methodData = [
+      {% for row in payment_breakdown_30 %}
+        { method: "{{ row.method|default:'Unspecified' }}", total: {{ row.total|default:0 }} }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ];
+    const methodsCtx = document.getElementById('paymentMethodsChart');
+    if (methodsCtx && window.Chart) {
+      const mLabels = methodData.map(m => m.method);
+      const mData = methodData.map(m => m.total);
+      new Chart(methodsCtx, {
+        type: 'pie',
+        data: {
+          labels: mLabels,
+          datasets: [{
+            data: mData,
+            backgroundColor: [
+              brandA80,
+              'rgba(59,130,246,0.85)',
+              'rgba(245,158,11,0.85)',
+              'rgba(139,92,246,0.85)',
+              'rgba(236,72,153,0.85)'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 12 } } }
+        }
+      });
+    }
+
+    // Expenses trend
+    const expensesCtx = document.getElementById('expensesChart');
+    if (expensesCtx && window.Chart) {
+      const labels = {{ expenses_ts_30.labels|default:"[]"|safe }};
+      const values = {{ expenses_ts_30.values|default:"[]"|safe }};
+      new Chart(expensesCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Daily Expenses',
+            data: values,
+            backgroundColor: brandA80,
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => 'UGX ' + Intl.NumberFormat().format(v) }
+            }
+          }
+        }
+      });
+    }
+
+    // Processing fees trend
+    const feesCtx = document.getElementById('feesChart');
+    if (feesCtx && window.Chart) {
+      const labels = {{ processing_fees_ts_30.labels|default:"[]"|safe }};
+      const values = {{ processing_fees_ts_30.values|default:"[]"|safe }};
+      new Chart(feesCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Daily Fees',
+            data: values,
+            backgroundColor: 'rgba(59,130,246,0.85)',
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => 'UGX ' + Intl.NumberFormat().format(v) }
+            }
+          }
+        }
+      });
+    }
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,148 @@
+{# templates/sacco/loan_payments_inline.html #}
+
+<section class="rounded-2xl bg-white shadow">
+  <header class="border-b border-slate-200 px-5 py-3 flex items-center justify-between">
+    <h2 class="font-semibold">Payments</h2>
+
+    <div class="text-sm text-slate-500">
+      Paid: <span class="font-semibold">UGX {{ loan.amount_paid }}</span>
+      <span class="mx-2 text-slate-300">|</span>
+      Balance:
+      <span class="font-semibold {% if loan.balance == 0 %}text-emerald-700{% else %}text-slate-900{% endif %}">
+        UGX {{ loan.balance }}
+      </span>
+    </div>
+  </header>
+
+  {# Inline add-payment form (role-gated) #}
+  {% if request.user.is_authenticated %}
+    {% if request.user.is_superuser or request.user.role == 'FINANCE' %}
+      <div class="px-5 py-4 border-b border-slate-200">
+        <form method="post" action="{% url 'sacco:payment_create' loan.id %}" class="grid grid-cols-1 sm:grid-cols-6 gap-3">
+          {% csrf_token %}
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-medium text-slate-600">Date</label>
+            {% if payment_form %}{{ payment_form.date }}{% else %}<input type="date" name="date" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">{% endif %}
+            {% if payment_form and payment_form.date.errors %}<p class="mt-1 text-xs text-red-600">{{ payment_form.date.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="sm:col-span-1">
+            <label class="block text-xs font-medium text-slate-600">Amount (UGX)</label>
+            {% if payment_form %}{{ payment_form.amount }}{% else %}<input type="number" step="0.01" name="amount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">{% endif %}
+            {% if payment_form and payment_form.amount.errors %}<p class="mt-1 text-xs text-red-600">{{ payment_form.amount.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="sm:col-span-1">
+            <label class="block text-xs font-medium text-slate-600">Method</label>
+            {% if payment_form %}{{ payment_form.method }}{% else %}
+              <select name="method" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                <option value="">—</option>
+                <option value="Cash">Cash</option>
+                <option value="Bank">Bank</option>
+                <option value="Mobile">Mobile</option>
+              </select>
+            {% endif %}
+            {% if payment_form and payment_form.method.errors %}<p class="mt-1 text-xs text-red-600">{{ payment_form.method.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="sm:col-span-1">
+            <label class="block text-xs font-medium text-slate-600">Receipt / Ref #</label>
+            {% if payment_form %}{{ payment_form.receipt }}{% else %}<input type="text" name="receipt" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">{% endif %}
+            {% if payment_form and payment_form.receipt.errors %}<p class="mt-1 text-xs text-red-600">{{ payment_form.receipt.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="sm:col-span-6">
+            <label class="block text-xs font-medium text-slate-600">Note</label>
+            {% if payment_form %}{{ payment_form.note }}{% else %}<input type="text" name="note" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">{% endif %}
+            {% if payment_form and payment_form.note.errors %}<p class="mt-1 text-xs text-red-600">{{ payment_form.note.errors.0 }}</p>{% endif %}
+          </div>
+
+          {% if payment_form and payment_form.non_field_errors %}
+            <div class="sm:col-span-6">
+              <div class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                {{ payment_form.non_field_errors }}
+              </div>
+            </div>
+          {% endif %}
+
+          <div class="sm:col-span-6 flex items-center justify-end">
+            <button type="submit"
+                    class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+              Add Payment
+            </button>
+          </div>
+        </form>
+        <p class="mt-2 text-[11px] text-slate-500">Tip: amount must not exceed remaining balance.</p>
+      </div>
+    {% endif %}
+  {% endif %}
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr class="bg-slate-50 text-left text-slate-600">
+          <th class="px-5 py-3 font-medium">Date</th>
+          <th class="px-5 py-3 font-medium">Amount</th>
+          <th class="px-5 py-3 font-medium">Method</th>
+          <th class="px-5 py-3 font-medium">Receipt</th>
+          <th class="px-5 py-3 font-medium">Note</th>
+          <th class="px-5 py-3 font-medium">By</th>
+          <th class="px-5 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% if payments %}
+          {% for p in payments %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-5 py-3">{{ p.date }}</td>
+              <td class="px-5 py-3">UGX {{ p.amount }}</td>
+              <td class="px-5 py-3">{{ p.method|default:"—" }}</td>
+              <td class="px-5 py-3">{{ p.receipt|default:"—" }}</td>
+              <td class="px-5 py-3">{{ p.note|default:"—" }}</td>
+              <td class="px-5 py-3">
+                {% if p.created_by %}{{ p.created_by.get_full_name|default:p.created_by.username }}{% else %}—{% endif %}
+              </td>
+              <td class="px-5 py-3">
+                <div class="flex flex-wrap gap-2">
+                  <a href="{{ loan.get_absolute_url }}#payment-{{ p.id }}"
+                     class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs hover:bg-slate-100">
+                    View
+                  </a>
+
+                  {# Optional: link to edit payment if you implemented it #}
+                  {% if request.user.is_authenticated %}
+                    {% if request.user.is_superuser or request.user.role == 'FINANCE' %}
+                      {# Example URL name if you add payment_update view #}
+                      {# <a href="{% url 'sacco:payment_update' p.id %}" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs hover:bg-slate-100">Edit</a> #}
+
+                      {# Optional delete via POST to a payment_delete view #}
+                      {# <form method="post" action="{% url 'sacco:payment_delete' p.id %}" onsubmit="return confirm('Delete this payment?');">
+                           {% csrf_token %}
+                           <button class="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs text-red-700 hover:bg-red-50">Delete</button>
+                         </form> #}
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="7" class="px-5 py-8 text-center text-slate-500">
+              No payments recorded yet.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="border-t border-slate-200 px-5 py-3 text-sm flex items-center justify-end gap-6">
+    <div><span class="text-slate-500">Paid:</span> <span class="font-medium">UGX {{ loan.amount_paid }}</span></div>
+    <div>
+      <span class="text-slate-500">Balance:</span>
+      <span class="font-medium {% if loan.balance == 0 %}text-emerald-700{% else %}text-slate-900{% endif %}">UGX {{ loan.balance }}</span>
+    </div>
+  </div>
+</section>

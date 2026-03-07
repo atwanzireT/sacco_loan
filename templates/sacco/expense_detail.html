@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Expense {{ expense.expense_id }} - Sacco{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="md:flex md:items-start md:justify-between mb-6">
+        <div class="flex-1">
+            <div class="flex items-center">
+                <h1 class="text-2xl font-bold text-gray-900">{{ expense.title }}</h1>
+                <span class="ml-3 px-2 py-1 text-xs font-semibold rounded-full 
+                    {% if expense.status == 'PENDING' %}bg-yellow-100 text-yellow-800
+                    {% elif expense.status == 'APPROVED' %}bg-green-100 text-green-800
+                    {% elif expense.status == 'REJECTED' %}bg-red-100 text-red-800
+                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {{ expense.get_status_display }}
+                </span>
+            </div>
+            <p class="mt-1 text-sm text-gray-500">
+                Expense ID: {{ expense.expense_id }} • Submitted on {{ expense.created|date:"M d, Y" }}
+            </p>
+        </div>
+        <div class="mt-4 flex space-x-3 md:mt-0">
+            {% if can_edit %}
+            <a href="{% url 'sacco:expense_update' expense.pk %}" 
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Edit
+            </a>
+            {% endif %}
+            {% if expense.is_rejected %}
+            <form method="post" action="{% url 'sacco:expense_reopen' expense.pk %}">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700">
+                    Reopen
+                </button>
+            </form>
+            {% endif %}
+            <a href="{% url 'sacco:expense_list' %}" 
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Main Content -->
+        <div class="lg:col-span-2">
+            <!-- Expense Details -->
+            <div class="bg-white shadow rounded-lg mb-6">
+                <div class="px-4 py-5 sm:p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Expense Details</h2>
+                    <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Category</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ expense.get_category_display }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Amount</dt>
+                            <dd class="mt-1 text-sm font-medium text-gray-900">UGX {{ expense.amount|intcomma }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Date Incurred</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ expense.date_incurred|date:"M d, Y" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Days Since Submission</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ expense.days_since_submission }} days</dd>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <dt class="text-sm font-medium text-gray-500">Purpose</dt>
+                            <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line">{{ expense.purpose|default:"No purpose provided" }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Approval Workflow -->
+            {% if expense.is_approved or expense.is_rejected or expense.is_paid %}
+            <div class="bg-white shadow rounded-lg mb-6">
+                <div class="px-4 py-5 sm:p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Approval Details</h2>
+                    <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {% if expense.approved_by %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Approved/Rejected By</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ expense.approved_by.get_full_name|default:expense.approved_by.username }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if expense.approved_at %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Decision Date</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ expense.approved_at|date:"M d, Y H:i" }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if expense.rejection_reason %}
+                        <div class="sm:col-span-2">
+                            <dt class="text-sm font-medium text-gray-500">Rejection Reason</dt>
+                            <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line">{{ expense.rejection_reason }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if expense.finance_notes %}
+                        <div class="sm:col-span-2">
+                            <dt class="text-sm font-medium text-gray-500">Finance Notes</dt>
+                            <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line">{{ expense.finance_notes }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Approval Form (Finance Users) -->
+            {% if approval_form and can_approve %}
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Approve or Reject Expense</h2>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="space-y-4">
+                            {% for field in approval_form %}
+                            <div>
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                    {{ field.label }}
+                                </label>
+                                {{ field }}
+                                {% if field.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</p>
+                                {% endif %}
+                                {% if field.help_text %}
+                                <p class="mt-1 text-sm text-gray-500">{{ field.help_text }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <button type="submit" 
+                                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#D59C2E] hover:bg-[#B8860B]">
+                                Submit Decision
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Submitted By -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Submitted By</h3>
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                <span class="text-sm font-medium text-gray-700">
+                                    {{ expense.submitted_by.get_full_name|default:expense.submitted_by.username|slice:":1"|upper }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">
+                                {{ expense.submitted_by.get_full_name|default:expense.submitted_by.username }}
+                            </p>
+                            <p class="text-sm text-gray-500">{{ expense.submitted_by.role|title }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Documents</h3>
+                    <div class="space-y-3">
+                        {% if expense.receipt %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Receipt</p>
+                            <a href="{{ expense.receipt.url }}" target="_blank" 
+                               class="inline-flex items-center text-sm text-[#D59C2E] hover:text-[#B8860B]">
+                                <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                View Receipt
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if expense.supporting_docs %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Supporting Documents</p>
+                            <a href="{{ expense.supporting_docs.url }}" target="_blank" 
+                               class="inline-flex items-center text-sm text-[#D59C2E] hover:text-[#B8860B]">
+                                <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                View Documents
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions (Finance Users) -->
+            {% if can_approve %}
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+                    <div class="space-y-2">
+                        {% if expense.is_pending %}
+                        <form method="post" action="{% url 'sacco:expense_approve' expense.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                                Approve Expense
+                            </button>
+                        </form>
+                        {% endif %}
+                        {% if expense.is_approved %}
+                        <form method="post" action="{% url 'sacco:expense_mark_paid' expense.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                                Mark as Paid
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

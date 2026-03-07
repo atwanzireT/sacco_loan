@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Field Officer Dashboard - Great Pearl SACCO{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root{
+    --brand:#D59C2E;          /* primary gold */
+    --brand-grad:#f1c55a;     /* gradient end */
+    --brand-soft:#F8EDD1;     /* soft bg tint */
+    --brand-ring:rgba(213,156,46,.18);
+  }
+  .stat-card{
+    transition: all .3s ease;
+    background: linear-gradient(135deg,#ffffff 0%,#f8fafc 100%);
+  }
+  .stat-card:hover{
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,.1), 0 10px 10px -5px rgba(0,0,0,.04);
+  }
+  .gradient-border{
+    position:relative;
+    background:linear-gradient(white,white) padding-box,
+               linear-gradient(135deg,var(--brand) 0%, var(--brand-grad) 100%) border-box;
+    border:1px solid transparent;
+  }
+  .section-header{ border-left:4px solid var(--brand); }
+  .kpi-icon{
+    width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;
+    background:linear-gradient(135deg,var(--brand) 0%, var(--brand-grad) 100%);
+  }
+  .metric-badge{
+    font-size:.75rem;padding:.25rem .75rem;border-radius:12px;
+  }
+  .table-hover tbody tr{ transition: all .2s ease; }
+  .table-hover tbody tr:hover{
+    background-color: rgba(213,156,46,.06);
+    transform: translateX(2px);
+  }
+  .document-status{ width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px; }
+  .action-btn{ transition:all .2s ease; }
+  .action-btn:hover{ transform:translateY(-1px); box-shadow:0 4px 6px -1px rgba(0,0,0,.1); }
+  .link-brand{ color:var(--brand); }
+  .link-brand:hover{ opacity:.85; }
+  .bg-brand-soft{ background: var(--brand-soft); }
+  .border-brand{ border-color: var(--brand); }
+  .chip-brand{ background:rgba(213,156,46,.12); color:var(--brand); }
+  .bg-brand-grad{ background-image:linear-gradient(to right,var(--brand),var(--brand-grad)); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50/30 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Header Section -->
+    <div class="mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div class="mb-4 md:mb-0">
+          <h1 class="text-2xl font-bold text-gray-900">Field Officer Dashboard</h1>
+          <p class="text-gray-600 mt-1">Member management and field operations overview</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
+            <div class="text-sm text-gray-500">Active Officer</div>
+            <div class="font-medium text-gray-900">{{ request.user.get_full_name|default:request.user.username }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Stats KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Total Members Card -->
+      <div class="stat-card rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div class="kpi-icon">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Members</div>
+        <div class="mt-1 text-2xl font-bold text-gray-900">{{ total_members|intcomma }}</div>
+        <div class="mt-2 text-xs text-gray-500">Registered in system</div>
+      </div>
+
+      <!-- Members with Loans Card -->
+      <div class="stat-card rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div class="kpi-icon">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Active Borrowers</div>
+        <div class="mt-1 text-2xl font-bold text-gray-900">{{ members_with_loans|intcomma }}</div>
+        <div class="mt-2 text-xs text-gray-500">Members with active loans</div>
+      </div>
+
+      <!-- Members Without Loans Card -->
+      <div class="stat-card rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div class="kpi-icon">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">No Loans</div>
+        <div class="mt-1 text-2xl font-bold" style="color:#B45309">{{ members_without_loans.count|intcomma }}</div>
+        <div class="mt-2 text-xs text-gray-500">Members without loans</div>
+      </div>
+
+      <!-- Incomplete Docs Card -->
+      <div class="stat-card rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div class="kpi-icon">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Incomplete Docs</div>
+        <div class="mt-1 text-2xl font-bold text-red-600">{{ members_incomplete_docs.count|intcomma }}</div>
+        <div class="mt-2 text-xs text-gray-500">Members missing documents</div>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- Members Needing Attention -->
+      <div class="lg:col-span-2 gradient-border rounded-xl p-6 bg-white">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center section-header pl-3">
+            <h2 class="text-lg font-semibold text-gray-900">Members Needing Attention</h2>
+          </div>
+          <div class="flex space-x-2">
+            <span class="metric-badge bg-red-100 text-red-800">{{ members_incomplete_docs.count }} Incomplete Docs</span>
+            <span class="metric-badge bg-orange-100 text-orange-800">{{ members_without_loans.count }} No Loans</span>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Incomplete Documents -->
+          <div>
+            <h3 class="text-md font-medium text-gray-900 mb-4 flex items-center">
+              <span class="document-status bg-red-500"></span>
+              Incomplete Documentation
+            </h3>
+            <div class="space-y-3">
+              {% for member in members_incomplete_docs %}
+              <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                <div class="flex items-center space-x-3">
+                  <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                      <span class="text-red-600 text-sm font-medium">{{ forloop.counter }}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <a href="{{ member.get_absolute_url }}" class="text-sm font-medium text-gray-900 link-brand">
+                      {{ member.full_name }}
+                    </a>
+                    <div class="text-xs text-gray-500">{{ member.phone }}</div>
+                  </div>
+                </div>
+                <a href="{% url 'sacco:member_update' member.id %}" class="action-btn bg-white text-red-600 hover:bg-red-50 border border-red-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors">
+                  Complete Docs
+                </a>
+              </div>
+              {% empty %}
+              <div class="text-center text-gray-500 py-4 bg-green-50 rounded-lg border border-green-200">
+                <svg class="w-8 h-8 text-green-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                All members have complete documentation
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Members Without Loans -->
+          <div>
+            <h3 class="text-md font-medium text-gray-900 mb-4 flex items-center">
+              <span class="document-status" style="background:#FB923C"></span>
+              No Active Loans
+            </h3>
+            <div class="space-y-3">
+              {% for member in members_without_loans %}
+              <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                <div class="flex items-center space-x-3">
+                  <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                      <span class="text-orange-600 text-sm font-medium">{{ forloop.counter }}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <a href="{{ member.get_absolute_url }}" class="text-sm font-medium text-gray-900 link-brand">
+                      {{ member.full_name }}
+                    </a>
+                    <div class="text-xs text-gray-500">{{ member.phone }}</div>
+                  </div>
+                </div>
+                <a href="{% url 'sacco:loan_create' %}?member={{ member.id }}" class="action-btn bg-white text-orange-600 hover:bg-orange-50 border border-orange-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors">
+                  Create Loan
+                </a>
+              </div>
+              {% empty %}
+              <div class="text-center text-gray-500 py-4 bg-green-50 rounded-lg border border-green-200">
+                <svg class="w-8 h-8 text-green-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                All members have active loans
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Recent Members -->
+      <div class="gradient-border rounded-xl bg-white overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center section-header pl-3">
+              <h2 class="text-lg font-semibold text-gray-900">Recently Added Members</h2>
+            </div>
+            <a href="{% url 'sacco:member_list' %}" class="text-sm font-medium link-brand">View All</a>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full table-hover">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200">
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Member</th>
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Phone</th>
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Joined</th>
+                <th class="text-left py-3 px-6 text-sm font-medium text-gray-500">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              {% for member in recent_members %}
+              <tr>
+                <td class="py-3 px-6">
+                  <a href="{{ member.get_absolute_url }}" class="text-sm font-medium text-gray-900 link-brand">
+                    {{ member.full_name }}
+                  </a>
+                  <div class="text-xs text-gray-500">{{ member.village|default:"No village" }}</div>
+                </td>
+                <td class="py-3 px-6">
+                  <div class="text-sm text-gray-900">{{ member.phone }}</div>
+                </td>
+                <td class="py-3 px-6">
+                  <div class="text-sm text-gray-900">{{ member.joined_on|date:"M j, Y" }}</div>
+                  <div class="text-xs text-gray-500">{{ member.joined_on|timesince }} ago</div>
+                </td>
+                <td class="py-3 px-6">
+                  {% if member.annotated_loan_count > 0 %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium chip-brand">
+                    Active Borrower
+                  </span>
+                  {% else %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    No Loans
+                  </span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="py-8 px-6 text-center text-gray-500">
+                  No members added recently
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="gradient-border rounded-xl bg-white overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex items-center section-header pl-3">
+            <h2 class="text-lg font-semibold text-gray-900">Quick Actions</h2>
+          </div>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 gap-4">
+            <a href="{% url 'sacco:member_create' %}" class="action-btn group flex items-center p-4 rounded-lg border border-brand bg-brand-soft/40 hover:bg-brand-soft transition-all">
+              <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(213,156,46,.12);">
+                <svg class="w-5 h-5" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-900">Register New Member</h3>
+                <p class="text-xs text-gray-500">Add a new member to the SACCO</p>
+              </div>
+            </a>
+
+            <a href="{% url 'sacco:loan_create' %}" class="action-btn group flex items-center p-4 rounded-lg border border-brand bg-brand-soft/40 hover:bg-brand-soft transition-all">
+              <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(213,156,46,.12);">
+                <svg class="w-5 h-5" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-900">Create New Loan</h3>
+                <p class="text-xs text-gray-500">Process a loan application</p>
+              </div>
+            </a>
+
+            <a href="{% url 'sacco:member_list' %}" class="action-btn group flex items-center p-4 rounded-lg border border-brand bg-brand-soft/40 hover:bg-brand-soft transition-all">
+              <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(213,156,46,.12);">
+                <svg class="w-5 h-5" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-900">Review Documentation</h3>
+                <p class="text-xs text-gray-500">Check member files</p>
+              </div>
+            </a>
+
+            <a href="{% url 'sacco:loan_list' %}?status=OPEN" class="action-btn group flex items-center p-4 rounded-lg border border-brand bg-brand-soft/40 hover:bg-brand-soft transition-all">
+              <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(213,156,46,.12);">
+                <svg class="w-5 h-5" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-900">Active Loans</h3>
+                <p class="text-xs text-gray-500">View all open loans</p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="mt-8 gradient-border rounded-xl p-6 bg-white">
+      <div class="flex items-center mb-6 section-header pl-3">
+        <h2 class="text-lg font-semibold text-gray-900">Field Performance</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="text-center p-6 bg-gray-50 rounded-lg">
+          <div class="text-2xl font-bold link-brand" style="color:var(--brand)">{{ members_with_loans }}</div>
+          <div class="text-sm text-gray-600 mt-1">Active Borrowers</div>
+          <div class="text-xs text-gray-500 mt-2">Members with active loans</div>
+        </div>
+        <div class="text-center p-6 bg-gray-50 rounded-lg">
+          <div class="text-2xl font-bold text-gray-900">{{ total_members }}</div>
+          <div class="text-sm text-gray-600 mt-1">Total Portfolio</div>
+          <div class="text-xs text-gray-500 mt-2">All registered members</div>
+        </div>
+        <div class="text-center p-6 bg-gray-50 rounded-lg">
+          <div class="text-2xl font-bold link-brand" style="color:var(--brand)">
+            {% if total_members > 0 %}
+              {% widthratio members_with_loans total_members 100 %}%
+            {% else %}
+              0%
+            {% endif %}
+          </div>
+          <div class="text-sm text-gray-600 mt-1">Conversion Rate</div>
+          <div class="text-xs text-gray-500 mt-2">Members with loans</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

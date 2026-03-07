@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Expenses Report • Vaulta Capital Growth{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div>
+      <p class="text-sm font-medium text-sky-700">Operational Spending</p>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900">Expenses Report</h1>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="window.print()" class="btn-secondary">Print</button>
+      <a href="{% url 'sacco:reports_home' %}" class="btn-primary">Back to Reports</a>
+    </div>
+  </div>
+
+  <form method="get" class="rounded-3xl border bg-white p-5 shadow-sm">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-5">
+      <div>
+        <label class="mb-2 block text-sm font-medium text-slate-700">Date From</label>
+        <input type="date" name="date_from" value="{{ date_from }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-amber-400">
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-medium text-slate-700">Date To</label>
+        <input type="date" name="date_to" value="{{ date_to }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-amber-400">
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-medium text-slate-700">Status</label>
+        <select name="status" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-amber-400">
+          <option value="">All</option>
+          {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-medium text-slate-700">Category</label>
+        <select name="category" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-amber-400">
+          <option value="">All</option>
+          {% for value, label in category_choices %}
+          <option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="flex items-end gap-3">
+        <button type="submit" class="btn-primary">Apply</button>
+        <a href="{% url 'sacco:expenses_report' %}" class="btn-secondary">Reset</a>
+      </div>
+    </div>
+  </form>
+
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Total Expense Records</p>
+      <p class="mt-2 text-3xl font-bold text-slate-900">{{ totals.total_count }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Total Amount</p>
+      <p class="mt-2 text-3xl font-bold text-slate-900">UGX {{ totals.total_amount|floatformat:0 }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Paid Amount</p>
+      <p class="mt-2 text-3xl font-bold text-emerald-700">UGX {{ totals.paid_amount|floatformat:0 }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Pending Amount</p>
+      <p class="mt-2 text-3xl font-bold text-amber-700">UGX {{ totals.pending_amount|floatformat:0 }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Approved Amount</p>
+      <p class="mt-2 text-3xl font-bold text-sky-700">UGX {{ totals.approved_amount|floatformat:0 }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Rejected Amount</p>
+      <p class="mt-2 text-3xl font-bold text-rose-700">UGX {{ totals.rejected_amount|floatformat:0 }}</p>
+    </div>
+  </div>
+
+  <div class="rounded-3xl border bg-white p-6 shadow-sm">
+    <h2 class="text-xl font-semibold text-slate-900">Expense List</h2>
+    <div class="mt-4 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="border-b text-left text-slate-500">
+            <th class="px-3 py-3">Expense ID</th>
+            <th class="px-3 py-3">Title</th>
+            <th class="px-3 py-3">Category</th>
+            <th class="px-3 py-3">Date</th>
+            <th class="px-3 py-3">Submitted By</th>
+            <th class="px-3 py-3">Status</th>
+            <th class="px-3 py-3">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for expense in expenses %}
+          <tr class="border-b last:border-b-0">
+            <td class="px-3 py-3 font-medium text-slate-900">{{ expense.expense_id }}</td>
+            <td class="px-3 py-3">
+              <a href="{% url 'sacco:expense_detail' expense.pk %}" class="text-amber-700 hover:underline">
+                {{ expense.title }}
+              </a>
+            </td>
+            <td class="px-3 py-3">{{ expense.get_category_display }}</td>
+            <td class="px-3 py-3">{{ expense.date_incurred }}</td>
+            <td class="px-3 py-3">{{ expense.submitted_by.get_full_name|default:expense.submitted_by.username }}</td>
+            <td class="px-3 py-3">
+              <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold
+                {% if expense.status == 'PENDING' %}bg-amber-50 text-amber-700
+                {% elif expense.status == 'APPROVED' %}bg-sky-50 text-sky-700
+                {% elif expense.status == 'PAID' %}bg-emerald-50 text-emerald-700
+                {% elif expense.status == 'REJECTED' %}bg-rose-50 text-rose-700
+                {% else %}bg-slate-100 text-slate-700{% endif %}">
+                {{ expense.get_status_display }}
+              </span>
+            </td>
+            <td class="px-3 py-3 font-semibold text-slate-900">UGX {{ expense.amount|floatformat:0 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="px-3 py-10 text-center text-slate-500">No expenses found for the selected filters.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

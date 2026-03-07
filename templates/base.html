@@ -1,0 +1,353 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Vaulta Capital Growth{% endblock %}</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root{
+      --brand:#D59C2E;
+      --brand-grad:#f1c55a;
+      --brand-soft:#F8EDD1;
+      --brand-ring:rgba(213,156,46,.18);
+    }
+
+    .nav-link{
+      display:inline-flex;
+      align-items:center;
+      gap:.5rem;
+      font-weight:500;
+      color:#374151;
+      transition:color .2s ease, background-color .2s ease, box-shadow .2s ease;
+      padding:.5rem .75rem;
+      border-radius:.75rem;
+    }
+    .nav-link:hover{
+      color:var(--brand);
+      background:rgba(213,156,46,.08);
+    }
+    .nav-link.active{
+      color:var(--brand);
+      background:rgba(213,156,46,.12);
+      box-shadow:0 0 0 3px var(--brand-ring);
+    }
+
+    .btn-primary{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:.5rem;
+      padding:.65rem 1rem;
+      border-radius:.9rem;
+      font-size:.875rem;
+      font-weight:600;
+      color:#fff;
+      background-image:linear-gradient(to right,var(--brand),var(--brand-grad));
+      box-shadow:0 1px 2px rgba(0,0,0,.06);
+      transition:opacity .2s ease, transform .2s ease, box-shadow .2s ease;
+      border:1px solid rgba(0,0,0,.06);
+    }
+    .btn-primary:hover{opacity:.92;transform:translateY(-1px);}
+    .btn-primary:active{transform:translateY(0);}
+
+    .btn-secondary{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:.5rem;
+      padding:.65rem 1rem;
+      border-radius:.9rem;
+      font-size:.875rem;
+      font-weight:600;
+      color:#374151;
+      background:#fff;
+      border:1px solid #e5e7eb;
+      transition:background-color .2s ease, transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+      box-shadow:0 1px 2px rgba(0,0,0,.03);
+    }
+    .btn-secondary:hover{
+      background:#f9fafb;
+      border-color:rgba(213,156,46,.35);
+      transform:translateY(-1px);
+    }
+    .btn-secondary:active{transform:translateY(0);}
+
+    .avatar{
+      width:36px;
+      height:36px;
+      border-radius:9999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      font-weight:700;
+      font-size:.8rem;
+      background-image:linear-gradient(135deg,var(--brand),var(--brand-grad));
+      box-shadow:0 0 0 3px var(--brand-ring);
+      user-select:none;
+    }
+
+    .msg-fade-out{
+      opacity:0;
+      transition:opacity .4s ease;
+    }
+
+    .select2-container .select2-selection--single{
+      height:42px !important;
+      border-radius:12px !important;
+      border:1px solid #e5e7eb !important;
+      display:flex !important;
+      align-items:center !important;
+      padding:0 12px !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered{
+      color:#111827 !important;
+      line-height:40px !important;
+      padding-left:0 !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow{
+      height:40px !important;
+    }
+  </style>
+
+  {% if form %}{{ form.media.css }}{% endif %}
+  {% if formset %}{{ formset.media.css }}{% endif %}
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <header class="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur-lg">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex h-16 items-center justify-between">
+        <div class="flex items-center gap-4">
+          <a href="{% url 'sacco:dashboard' %}" class="flex items-center gap-3">
+            <img
+              src="https://i.pinimg.com/736x/52/11/70/52117045ec435a81bd8c499a3964750f.jpg"
+              alt="Vaulta Capital Growth"
+              class="h-10 object-contain sm:h-12"
+              loading="lazy"
+            />
+            <span class="hidden font-bold tracking-tight text-gray-900 lg:block">
+              Vaulta Capital Growth
+            </span>
+          </a>
+
+          <nav class="ml-2 hidden items-center gap-2 text-sm md:flex">
+            <a href="{% url 'sacco:dashboard' %}"
+               class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+              Dashboard
+            </a>
+
+            <a href="{% url 'sacco:member_list' %}"
+               class="nav-link {% if request.resolver_match.url_name and 'member' in request.resolver_match.url_name %}active{% endif %}">
+              Members
+            </a>
+
+            <a href="{% url 'sacco:loan_list' %}"
+               class="nav-link {% if request.resolver_match.url_name and 'loan' in request.resolver_match.url_name and 'field' not in request.resolver_match.url_name and 'finance' not in request.resolver_match.url_name %}active{% endif %}">
+              Loans
+            </a>
+
+            <a href="{% url 'sacco:expense_list' %}"
+               class="nav-link {% if request.resolver_match.url_name and 'expense' in request.resolver_match.url_name %}active{% endif %}">
+              Expenses
+            </a>
+
+            <a href="{% url 'sacco:reports_home' %}"
+               class="nav-link {% if request.resolver_match.url_name == 'reports_home' or request.resolver_match.url_name == 'general_report' or request.resolver_match.url_name == 'collections_report' or request.resolver_match.url_name == 'arrears_report' or request.resolver_match.url_name == 'expenses_report' or request.resolver_match.url_name == 'member_statement' or request.resolver_match.url_name == 'loan_statement' %}active{% endif %}">
+              Reports
+            </a>
+
+            {% if request.user.is_authenticated %}
+              {% if request.user.is_superuser or request.user.role == 'FIELD_OFFICER' %}
+                <a href="{% url 'sacco:field_dashboard' %}"
+                   class="nav-link {% if request.resolver_match.url_name and 'field' in request.resolver_match.url_name %}active{% endif %}">
+                  Field Office
+                </a>
+              {% endif %}
+
+              {% if request.user.is_superuser or request.user.role == 'FINANCE' %}
+                <a href="{% url 'sacco:finance_dashboard' %}"
+                   class="nav-link {% if request.resolver_match.url_name and 'finance' in request.resolver_match.url_name %}active{% endif %}">
+                  Finance
+                </a>
+              {% endif %}
+            {% endif %}
+          </nav>
+        </div>
+
+        <div class="flex items-center gap-3">
+          {% if request.user.is_authenticated %}
+            <div class="hidden items-center gap-3 sm:flex">
+              <div class="text-right leading-tight">
+                <div class="font-semibold text-gray-900">
+                  {{ request.user.get_full_name|default:request.user.username }}
+                </div>
+                <div class="text-xs text-gray-500">
+                  {% if request.user.is_superuser %}
+                    Admin
+                  {% else %}
+                    {{ request.user.get_role_display|default:"User" }}
+                  {% endif %}
+                </div>
+              </div>
+              <div class="avatar">
+                {{ request.user.username|first|upper }}
+              </div>
+            </div>
+
+            <form method="post" action="{% url 'accounts:logout' %}" class="hidden sm:inline">
+              {% csrf_token %}
+              <button type="submit" class="btn-secondary" title="Logout">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                <span class="hidden lg:inline">Logout</span>
+              </button>
+            </form>
+          {% else %}
+            <a href="{% url 'accounts:login' %}" class="btn-primary">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+              </svg>
+              Sign In
+            </a>
+          {% endif %}
+
+          <button
+            type="button"
+            class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white hover:bg-gray-50 md:hidden"
+            aria-label="Open menu"
+            onclick="document.getElementById('mobileMenu').classList.toggle('hidden')"
+          >
+            <svg class="h-5 w-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="mobileMenu" class="hidden pb-4 md:hidden">
+        <div class="mt-2 grid gap-2">
+          <a href="{% url 'sacco:dashboard' %}"
+             class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            Dashboard
+          </a>
+
+          <a href="{% url 'sacco:member_list' %}"
+             class="nav-link {% if request.resolver_match.url_name and 'member' in request.resolver_match.url_name %}active{% endif %}">
+            Members
+          </a>
+
+          <a href="{% url 'sacco:loan_list' %}"
+             class="nav-link {% if request.resolver_match.url_name and 'loan' in request.resolver_match.url_name and 'field' not in request.resolver_match.url_name and 'finance' not in request.resolver_match.url_name %}active{% endif %}">
+            Loans
+          </a>
+
+          <a href="{% url 'sacco:expense_list' %}"
+             class="nav-link {% if request.resolver_match.url_name and 'expense' in request.resolver_match.url_name %}active{% endif %}">
+            Expenses
+          </a>
+
+          <a href="{% url 'sacco:reports_home' %}"
+             class="nav-link {% if request.resolver_match.url_name == 'reports_home' or request.resolver_match.url_name == 'general_report' or request.resolver_match.url_name == 'collections_report' or request.resolver_match.url_name == 'arrears_report' or request.resolver_match.url_name == 'expenses_report' or request.resolver_match.url_name == 'member_statement' or request.resolver_match.url_name == 'loan_statement' %}active{% endif %}">
+            Reports
+          </a>
+
+          {% if request.user.is_authenticated %}
+            {% if request.user.is_superuser or request.user.role == 'FIELD_OFFICER' %}
+              <a href="{% url 'sacco:field_dashboard' %}"
+                 class="nav-link {% if request.resolver_match.url_name and 'field' in request.resolver_match.url_name %}active{% endif %}">
+                Field Office
+              </a>
+            {% endif %}
+
+            {% if request.user.is_superuser or request.user.role == 'FINANCE' %}
+              <a href="{% url 'sacco:finance_dashboard' %}"
+                 class="nav-link {% if request.resolver_match.url_name and 'finance' in request.resolver_match.url_name %}active{% endif %}">
+                Finance
+              </a>
+            {% endif %}
+
+            <div class="mt-2 rounded-2xl border border-gray-200 bg-white p-4">
+              <div class="flex items-center gap-3">
+                <div class="avatar">{{ request.user.username|first|upper }}</div>
+                <div>
+                  <div class="font-semibold text-gray-900">
+                    {{ request.user.get_full_name|default:request.user.username }}
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    {% if request.user.is_superuser %}
+                      Admin
+                    {% else %}
+                      {{ request.user.get_role_display|default:"User" }}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <form method="post" action="{% url 'accounts:logout' %}" class="mt-3">
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary w-full">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                  </svg>
+                  <span>Logout</span>
+                </button>
+              </form>
+            </div>
+          {% else %}
+            <a href="{% url 'accounts:login' %}" class="btn-primary w-full justify-center">
+              Login
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="py-6">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      {% if messages %}
+        <div id="django-messages" class="mb-6 space-y-3">
+          {% for message in messages %}
+            <div class="rounded-2xl border px-4 py-3 text-sm
+              {% if message.tags == 'success' %}border-green-200 bg-green-50 text-green-800
+              {% elif message.tags == 'error' %}border-red-200 bg-red-50 text-red-800
+              {% elif message.tags == 'warning' %}border-yellow-200 bg-yellow-50 text-yellow-800
+              {% else %}border-blue-200 bg-blue-50 text-blue-800{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  {% if form %}{{ form.media.js }}{% endif %}
+  {% if formset %}{{ formset.media.js }}{% endif %}
+
+  <script>
+    setTimeout(function () {
+      const box = document.getElementById("django-messages");
+      if (box) {
+        box.classList.add("msg-fade-out");
+        setTimeout(function () {
+          box.remove();
+        }, 500);
+      }
+    }, 3500);
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

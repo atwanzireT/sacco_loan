@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+{% block title %}{% if form.instance.pk %}Edit Member{% else %}New Member{% endif %} — Great Pearl SACCO{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root{
+    --brand:#D59C2E;          /* primary gold */
+    --brand-grad:#f1c55a;     /* gradient end */
+    --brand-ring:rgba(213,156,46,.18);
+  }
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, var(--brand) 0%, var(--brand-grad) 100%) border-box;
+    border: 1px solid transparent;
+  }
+  .form-section {
+    transition: all 0.3s ease;
+  }
+  .form-section:hover {
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  }
+  .form-input {
+    transition: all 0.2s ease;
+  }
+  .form-input:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-ring);
+  }
+  .file-upload-area {
+    border: 2px dashed #d1d5db;
+    transition: all 0.3s ease;
+  }
+  .file-upload-area:hover {
+    border-color: var(--brand);
+    background-color: #f9fafb;
+  }
+  .action-btn {
+    transition: all 0.2s ease;
+  }
+  .action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  .document-preview {
+    transition: all 0.3s ease;
+  }
+  .document-preview:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  /* Brand helpers */
+  .text-brand{ color: var(--brand); }
+  .link-brand{ color: var(--brand); }
+  .link-brand:hover{ opacity:.85; }
+  .bg-brand-grad{ background-image: linear-gradient(to right, var(--brand), var(--brand-grad)); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50/30 py-6">
+  <div class="max-w-10xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Header Section -->
+    <div class="mb-8">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+        <div class="mb-4 lg:mb-0">
+          <h1 class="text-2xl font-bold text-gray-900">
+            {% if form.instance.pk %}
+              <span class="text-brand">Edit Member</span>
+            {% else %}
+              <span class="text-brand">Register New Member</span>
+            {% endif %}
+          </h1>
+          <p class="text-gray-600 mt-1">
+            {% if form.instance.pk %}
+              Update member information and documents for <span class="font-medium">{{ form.instance.full_name }}</span>
+            {% else %}
+              Register a new member to join the Great Pearl SACCO
+            {% endif %}
+          </p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <a href="{% url 'sacco:member_list' %}" 
+             class="action-btn inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Members
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="gradient-border rounded-xl bg-red-50 p-4 mb-6">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Please correct the following errors:</h3>
+            <div class="mt-2 text-sm text-red-700">
+              {{ form.non_field_errors }}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+      {% csrf_token %}
+
+      <!-- Personal Information -->
+      <section class="gradient-border rounded-xl bg-white form-section">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-brand" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            Personal Information
+          </h2>
+        </div>
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- First Name -->
+          <div>
+            <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              First Name *
+            </label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- Last Name -->
+          <div>
+            <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Last Name *
+            </label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- Phone -->
+          <div>
+            <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Phone Number *
+            </label>
+            <div class="relative">
+              {{ form.phone }}
+            </div>
+            {% if form.phone.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.phone.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- NIN -->
+          <div>
+            <label for="{{ form.nin.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              National ID (NIN)
+            </label>
+            {{ form.nin }}
+            {% if form.nin.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.nin.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- Next of Kin -->
+          <div>
+            <label for="{{ form.next_of_kin.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Next of Kin
+            </label>
+            {{ form.next_of_kin }}
+            <p class="mt-2 text-xs text-gray-500">Full name of next of kin</p>
+            {% if form.next_of_kin.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.next_of_kin.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- Joined Date -->
+          <div>
+            <label for="{{ form.joined_on.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Membership Date *
+            </label>
+            <div class="relative">
+              {{ form.joined_on }}
+              <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+            </div>
+            {% if form.joined_on.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.joined_on.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Address & Location -->
+      <section class="gradient-border rounded-xl bg-white form-section">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-brand" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            Address & Location
+          </h2>
+        </div>
+        <div class="p-6 grid grid-cols-1 gap-6">
+          <!-- Address -->
+          <div>
+            <label for="{{ form.address.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Full Address
+            </label>
+            {{ form.address }}
+            <p class="mt-2 text-xs text-gray-500">Complete physical address</p>
+            {% if form.address.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.address.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Village -->
+            <div>
+              <label for="{{ form.village.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                Village
+              </label>
+              {{ form.village }}
+              {% if form.village.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.village.errors.0 }}</p>
+              {% endif %}
+            </div>
+
+            <!-- Subcounty -->
+            <div>
+              <label for="{{ form.subcounty.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                Subcounty
+              </label>
+              {{ form.subcounty }}
+              {% if form.subcounty.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.subcounty.errors.0 }}</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Documents -->
+      <section class="gradient-border rounded-xl bg-white form-section">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-brand" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Member Documents
+          </h2>
+          <p class="text-sm text-gray-500 mt-1">Upload required identification and recommendation documents (PDF, JPG, PNG, WebP)</p>
+        </div>
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- ID Card Front -->
+          <div class="file-upload-area rounded-xl p-4">
+            <label for="{{ form.id_card_front.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              ID Card (Front) *
+            </label>
+            {{ form.id_card_front }}
+            <p class="mt-2 text-xs text-gray-500">Front side of national ID card</p>
+            {% if form.id_card_front.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.id_card_front.errors.0 }}</p>
+            {% endif %}
+            {% if form.instance.pk and form.instance.id_card_front %}
+              <div class="mt-4">
+                <a href="{{ form.instance.id_card_front.url }}" target="_blank" 
+                   class="inline-flex items-center text-sm link-brand mb-2">
+                  <svg class="w-4 h-4 mr-1" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                  View Current File
+                </a>
+                <div class="document-preview rounded-lg border border-gray-200 overflow-hidden mt-2">
+                  <img src="{{ form.instance.id_card_front.url }}" alt="ID Card Front" class="w-full h-32 object-cover">
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- ID Card Back -->
+          <div class="file-upload-area rounded-xl p-4">
+            <label for="{{ form.id_card_back.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              ID Card (Back) *
+            </label>
+            {{ form.id_card_back }}
+            <p class="mt-2 text-xs text-gray-500">Back side of national ID card</p>
+            {% if form.id_card_back.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.id_card_back.errors.0 }}</p>
+            {% endif %}
+            {% if form.instance.pk and form.instance.id_card_back %}
+              <div class="mt-4">
+                <a href="{{ form.instance.id_card_back.url }}" target="_blank" 
+                   class="inline-flex items-center text-sm link-brand mb-2">
+                  <svg class="w-4 h-4 mr-1" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                  View Current File
+                </a>
+                <div class="document-preview rounded-lg border border-gray-200 overflow-hidden mt-2">
+                  <img src="{{ form.instance.id_card_back.url }}" alt="ID Card Back" class="w-full h-32 object-cover">
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- LC1 Letter -->
+          <div class="file-upload-area rounded-xl p-4">
+            <label for="{{ form.lc1_letter.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              LC1 Letter *
+            </label>
+            {{ form.lc1_letter }}
+            <p class="mt-2 text-xs text-gray-500">Local Council recommendation letter</p>
+            {% if form.lc1_letter.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.lc1_letter.errors.0 }}</p>
+            {% endif %}
+            {% if form.instance.pk and form.instance.lc1_letter %}
+              <div class="mt-4">
+                <a href="{{ form.instance.lc1_letter.url }}" target="_blank" 
+                   class="inline-flex items-center text-sm link-brand">
+                  <svg class="w-4 h-4 mr-1" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                  View Current File
+                </a>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Recommendation Letter 1 -->
+          <div class="file-upload-area rounded-xl p-4">
+            <label for="{{ form.recommendation_letter_1.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Recommendation Letter #1
+            </label>
+            {{ form.recommendation_letter_1 }}
+            <p class="mt-2 text-xs text-gray-500">First recommendation letter</p>
+            {% if form.recommendation_letter_1.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.recommendation_letter_1.errors.0 }}</p>
+            {% endif %}
+            {% if form.instance.pk and form.instance.recommendation_letter_1 %}
+              <div class="mt-4">
+                <a href="{{ form.instance.recommendation_letter_1.url }}" target="_blank" 
+                   class="inline-flex items-center text-sm link-brand">
+                  <svg class="w-4 h-4 mr-1" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                  View Current File
+                </a>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Recommendation Letter 2 -->
+          <div class="file-upload-area rounded-xl p-4">
+            <label for="{{ form.recommendation_letter_2.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Recommendation Letter #2
+            </label>
+            {{ form.recommendation_letter_2 }}
+            <p class="mt-2 text-xs text-gray-500">Second recommendation letter</p>
+            {% if form.recommendation_letter_2.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.recommendation_letter_2.errors.0 }}</p>
+            {% endif %}
+            {% if form.instance.pk and form.instance.recommendation_letter_2 %}
+              <div class="mt-4">
+                <a href="{{ form.instance.recommendation_letter_2.url }}" target="_blank" 
+                   class="inline-flex items-center text-sm link-brand">
+                  <svg class="w-4 h-4 mr-1" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                  View Current File
+                </a>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Evidence Letters -->
+          {% if form.evidence_letters %}
+          <div class="file-upload-area rounded-xl p-4 md:col-span-2">
+            <label for="{{ form.evidence_letters.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Additional Evidence Documents
+            </label>
+            {{ form.evidence_letters }}
+            <p class="mt-2 text-xs text-gray-500">Any other supporting documents</p>
+            {% if form.evidence_letters.errors %}
+              <p class="mt-2 text-sm text-red-600">{{ form.evidence_letters.errors.0 }}</p>
+            {% endif %}
+            {% if form.instance.pk and form.instance.evidence_letters %}
+              <div class="mt-4">
+                <a href="{{ form.instance.evidence_letters.url }}" target="_blank" 
+                   class="inline-flex items-center text-sm link-brand">
+                  <svg class="w-4 h-4 mr-1" style="color:var(--brand)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                  View Current File
+                </a>
+              </div>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- Form Actions -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-6">
+        <div class="text-sm text-gray-500">
+          {% if form.instance.pk %}
+            Member since {{ form.instance.joined_on|date:"M j, Y" }}
+            {% if form.instance.created_by %} • Registered by {{ form.instance.created_by.get_full_name }}{% endif %}
+          {% else %}
+            All fields marked with * are required
+          {% endif %}
+        </div>
+        <div class="flex items-center space-x-3">
+          <a href="{% url 'sacco:member_list' %}"
+             class="action-btn inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            Cancel
+          </a>
+          <button type="submit"
+                  class="action-btn inline-flex items-center rounded-xl bg-brand-grad px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 shadow-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            {% if form.instance.pk %}Save Changes{% else %}Create Member{% endif %}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Auto-set today's date for new members -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const joinedDateField = document.getElementById('{{ form.joined_on.id_for_label }}');
+  
+  // Set default date to today for new members
+  if (joinedDateField && !joinedDateField.value && !{{ form.instance.pk|yesno:"true,false" }}) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    joinedDateField.value = `${yyyy}-${mm}-${dd}`;
+  }
+});
+</script>
+{% endblock %}

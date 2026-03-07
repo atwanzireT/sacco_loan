@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Collections Report • Vaulta Capital Growth{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div>
+      <p class="text-sm font-medium text-emerald-700">Repayment Analysis</p>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900">Collections Report</h1>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="window.print()" class="btn-secondary">Print</button>
+      <a href="{% url 'sacco:reports_home' %}" class="btn-primary">Back to Reports</a>
+    </div>
+  </div>
+
+  <form method="get" class="rounded-3xl border bg-white p-5 shadow-sm">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div>
+        <label class="mb-2 block text-sm font-medium text-slate-700">Date From</label>
+        <input type="date" name="date_from" value="{{ date_from }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-amber-400">
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-medium text-slate-700">Date To</label>
+        <input type="date" name="date_to" value="{{ date_to }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-amber-400">
+      </div>
+      <div class="md:col-span-2 flex items-end gap-3">
+        <button type="submit" class="btn-primary">Apply Filters</button>
+        <a href="{% url 'sacco:collections_report' %}" class="btn-secondary">Reset</a>
+      </div>
+    </div>
+  </form>
+
+  <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Total Payments</p>
+      <p class="mt-2 text-3xl font-bold text-slate-900">{{ totals.total_payments }}</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-500">Total Amount Collected</p>
+      <p class="mt-2 text-3xl font-bold text-emerald-700">UGX {{ totals.total_amount|floatformat:0 }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <div class="rounded-3xl border bg-white p-6 shadow-sm">
+      <h2 class="text-xl font-semibold text-slate-900">By Payment Method</h2>
+      <div class="mt-4 overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="border-b text-left text-slate-500">
+              <th class="px-3 py-3">Method</th>
+              <th class="px-3 py-3">Count</th>
+              <th class="px-3 py-3">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in by_method %}
+            <tr class="border-b last:border-b-0">
+              <td class="px-3 py-3 font-medium text-slate-900">{{ row.method|default:"—" }}</td>
+              <td class="px-3 py-3">{{ row.count }}</td>
+              <td class="px-3 py-3">UGX {{ row.total|floatformat:0 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="px-3 py-6 text-center text-slate-500">No payment method data found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="rounded-3xl border bg-white p-6 shadow-sm">
+      <h2 class="text-xl font-semibold text-slate-900">By Day</h2>
+      <div class="mt-4 overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="border-b text-left text-slate-500">
+              <th class="px-3 py-3">Date</th>
+              <th class="px-3 py-3">Count</th>
+              <th class="px-3 py-3">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in by_day %}
+            <tr class="border-b last:border-b-0">
+              <td class="px-3 py-3 font-medium text-slate-900">{{ row.date }}</td>
+              <td class="px-3 py-3">{{ row.count }}</td>
+              <td class="px-3 py-3">UGX {{ row.total|floatformat:0 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="px-3 py-6 text-center text-slate-500">No daily collection data found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-3xl border bg-white p-6 shadow-sm">
+    <h2 class="text-xl font-semibold text-slate-900">Repayment Transactions</h2>
+    <div class="mt-4 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="border-b text-left text-slate-500">
+            <th class="px-3 py-3">Date</th>
+            <th class="px-3 py-3">Member</th>
+            <th class="px-3 py-3">Loan</th>
+            <th class="px-3 py-3">Method</th>
+            <th class="px-3 py-3">Receipt</th>
+            <th class="px-3 py-3">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in payments %}
+          <tr class="border-b last:border-b-0">
+            <td class="px-3 py-3">{{ payment.date }}</td>
+            <td class="px-3 py-3 font-medium text-slate-900">{{ payment.loan.member.full_name }}</td>
+            <td class="px-3 py-3">
+              <a href="{% url 'sacco:loan_detail' payment.loan.pk %}" class="text-amber-700 hover:underline">
+                {{ payment.loan.loan_id }}
+              </a>
+            </td>
+            <td class="px-3 py-3">{{ payment.method|default:"—" }}</td>
+            <td class="px-3 py-3">{{ payment.receipt|default:"—" }}</td>
+            <td class="px-3 py-3 font-semibold text-emerald-700">UGX {{ payment.amount|floatformat:0 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="px-3 py-8 text-center text-slate-500">No payments found for the selected period.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

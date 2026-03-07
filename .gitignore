@@ -1,0 +1,13 @@
+/venvdb.sqlite3
+*.sqlite3
+*.pyc
+__pycache__/
+.env
+venv
+*.log
+**/migrations/*
+!**/migrations/__init__.pydb.sqlite3
+*.sqlite3
+*.sqlite3-journal
+!uploads/
+uploads/**

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Field — SACCO{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between gap-4">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-900">Field Officers</h1>
+    <p class="text-sm text-slate-500">Register members and initiate loans from the field.</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'sacco:member_create' %}"
+       class="inline-flex items-center rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+      + New Member
+    </a>
+  </div>
+</div>
+
+<!-- Summary pills (optional) -->
+<div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+  <div class="rounded-xl border border-slate-200 bg-white p-4">
+    <div class="text-xs uppercase tracking-wide text-slate-500">Showing</div>
+    <div class="mt-1 text-lg font-semibold">{{ page.paginator.count }} members</div>
+  </div>
+  <div class="rounded-xl border border-slate-200 bg-white p-4">
+    <div class="text-xs uppercase tracking-wide text-slate-500">Page</div>
+    <div class="mt-1 text-lg font-semibold">{{ page.number }} / {{ page.paginator.num_pages }}</div>
+  </div>
+  <div class="rounded-xl border border-slate-200 bg-white p-4">
+    <div class="text-xs uppercase tracking-wide text-slate-500">Per page</div>
+    <div class="mt-1 text-lg font-semibold">{{ page.paginator.per_page }}</div>
+  </div>
+</div>
+
+<!-- Members list -->
+<div class="rounded-2xl bg-white shadow">
+  <div class="border-b border-slate-200 px-5 py-3 flex items-center justify-between">
+    <h2 class="font-semibold">Members</h2>
+    <form method="get" class="flex items-center gap-2">
+      <input type="text" name="q" value="{{ q|default:'' }}" placeholder="Search name, phone, NIN, village…"
+             class="block w-64 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+      <button class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-100">Search</button>
+    </form>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr class="bg-slate-50 text-left text-slate-600">
+          <th class="px-5 py-3 font-medium">Member</th>
+          <th class="px-5 py-3 font-medium">Phone</th>
+          <th class="px-5 py-3 font-medium">Location</th>
+          <th class="px-5 py-3 font-medium">Loans</th>
+          <th class="px-5 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% if page.object_list %}
+          {% for m in page.object_list %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-5 py-3">
+                <a href="{{ m.get_absolute_url }}" class="font-medium hover:underline">
+                  {{ m.full_name }}
+                </a>
+                <div class="text-xs text-slate-500">Joined {{ m.joined_on }}</div>
+              </td>
+              <td class="px-5 py-3">
+                {{ m.phone }}
+              </td>
+              <td class="px-5 py-3">
+                <div>{{ m.village|default:"—" }}</div>
+                <div class="text-xs text-slate-500">{{ m.subcounty|default:"" }}</div>
+              </td>
+              <td class="px-5 py-3">
+                <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                  {{ m.loan_count }} total
+                </span>
+              </td>
+              <td class="px-5 py-3">
+                <div class="flex flex-wrap gap-2">
+                  <a href="{{ m.get_absolute_url }}"
+                     class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs hover:bg-slate-100">
+                    View
+                  </a>
+                  <a href="{% url 'sacco:loan_create' %}?member={{ m.id }}"
+                     class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">
+                    New Loan
+                  </a>
+                  <a href="{% url 'sacco:member_update' m.id %}"
+                     class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs hover:bg-slate-100">
+                    Edit
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="5" class="px-5 py-8 text-center text-slate-500">
+              No members found.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="border-t border-slate-200 px-5 py-3 flex items-center justify-between text-sm">
+    <div class="text-slate-500">
+      Showing
+      <span class="font-medium">
+        {% if page.paginator.count == 0 %}0{% else %}{{ page.start_index }}–{{ page.end_index }}{% endif %}
+      </span>
+      of <span class="font-medium">{{ page.paginator.count }}</span>
+    </div>
+    <div class="flex items-center gap-2">
+      {% if page.has_previous %}
+        <a href="?page={{ page.previous_page_number }}{% if q %}&q={{ q }}{% endif %}"
+           class="rounded-lg border border-slate-300 px-3 py-1.5 hover:bg-slate-100">Previous</a>
+      {% else %}
+        <span class="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-400">Previous</span>
+      {% endif %}
+      <span class="text-slate-500">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}
+        <a href="?page={{ page.next_page_number }}{% if q %}&q={{ q }}{% endif %}"
+           class="rounded-lg border border-slate-300 px-3 py-1.5 hover:bg-slate-100">Next</a>
+      {% else %}
+        <span class="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-400">Next</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "accounts/_auth_base.html" %}
+{% block title %}Sign in — Vaulta express limited{% endblock %}
+
+{% block content %}
+<form method="post" novalidate class="auth-form">
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <div class="mb-4">
+    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-slate-700 dark:text-slate-200">Username</label>
+    {{ form.username }}
+    {% if form.username.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.username.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  <div class="mb-2">
+    <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-slate-700 dark:text-slate-200">Password</label>
+    {{ form.password }}
+    {% if form.password.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.password.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  <div class="mt-6">
+    <button type="submit" class="btn-brand">Sign in</button>
+  </div>
+</form>
+{% endblock %}

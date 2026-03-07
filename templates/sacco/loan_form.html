@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if form.instance.pk %}Edit Loan {{ form.instance.loan_id }}{% else %}New Loan{% endif %} — Great Pearl SACCO
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root{
+    --brand:#D59C2E;
+    --brand-50:#FBF5E8;
+    --brand-100:#F6E9CC;
+    --brand-200:#EED299;
+    --brand-700:#A6781F;
+  }
+  .gradient-border{
+    position:relative;
+    background:linear-gradient(white,white) padding-box,
+               linear-gradient(135deg,var(--brand) 0%, #f1c55a 100%) border-box;
+    border:1px solid transparent;
+  }
+  .text-brand{color:var(--brand)}
+  .bg-brand{background-color:var(--brand)}
+  .bg-brand-grad{background-image:linear-gradient(to right,var(--brand),#f1c55a)}
+  .help{margin-top:.35rem;font-size:.75rem;color:#6b7280}
+  .field-error{margin-top:.35rem;font-size:.875rem;color:#dc2626}
+  .action-btn{transition:all .2s ease}
+  .action-btn:hover{transform:translateY(-1px);box-shadow:0 4px 6px -1px rgba(0,0,0,.1)}
+  .file-upload-area{border:2px dashed #d1d5db;transition:all .2s ease}
+  .file-upload-area:hover{border-color:var(--brand);background:#f9fafb}
+  .preview-card{
+    background:linear-gradient(135deg,var(--brand-50) 0%, #fffdf6 100%);
+    border:1px solid var(--brand-100);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50/30 py-6">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">
+            {% if form.instance.pk %}
+              <span class="text-brand">Edit Loan {{ form.instance.loan_id }}</span>
+            {% else %}
+              <span class="text-brand">Create New Loan</span>
+            {% endif %}
+          </h1>
+          <p class="text-gray-600 mt-1">
+            {% if form.instance.pk %}
+              Update loan details for <span class="font-medium">{{ form.instance.member.full_name }}</span>
+            {% else %}
+              Create a new loan application. Expected total, installment, and due date are auto-calculated.
+            {% endif %}
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="{% if form.instance.pk %}{{ form.instance.get_absolute_url }}{% else %}{% url 'sacco:loan_list' %}{% endif %}"
+             class="action-btn inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Cancel
+          </a>
+
+          <button type="submit" form="loan-form"
+                  class="action-btn inline-flex items-center rounded-xl bg-brand-grad px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 shadow-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            {% if form.instance.pk %}Save Changes{% else %}Create Loan{% endif %}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="gradient-border rounded-xl bg-red-50 p-4 mb-6">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Please correct the following errors:</h3>
+            <div class="mt-2 text-sm text-red-700">
+              {{ form.non_field_errors }}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <form id="loan-form" method="post" enctype="multipart/form-data" class="space-y-6">
+      {% csrf_token %}
+
+      <!-- Member & Notes -->
+      <section class="gradient-border rounded-xl bg-white">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            Member & Notes
+          </h2>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="lg:col-span-2">
+            <label for="{{ form.member.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Member <span class="text-red-600">*</span>
+            </label>
+            {{ form.member }}
+            {% if form.member.errors %}<p class="field-error">{{ form.member.errors.0 }}</p>{% endif %}
+
+            {% if form.instance.member %}
+              <div class="mt-3 p-3 rounded-lg border" style="border-color:var(--brand); background:rgba(213,156,46,0.05);">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" style="background:var(--brand);">
+                    <span class="text-white font-medium text-xs">{{ form.instance.member.full_name|first|upper }}</span>
+                  </div>
+                  <div>
+                    <a href="{{ form.instance.member.get_absolute_url }}" class="text-sm font-medium text-brand hover:opacity-80">
+                      {{ form.instance.member.full_name }}
+                    </a>
+                    <div class="text-xs" style="color:var(--brand-700);">
+                      {{ form.instance.member.phone }}
+                      {% if form.instance.member.nin %} • NIN: {{ form.instance.member.nin }}{% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="lg:col-span-2">
+            <label for="{{ form.note.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Loan Purpose / Notes
+            </label>
+            {{ form.note }}
+            {% if form.note.errors %}<p class="field-error">{{ form.note.errors.0 }}</p>{% endif %}
+            <p class="help">Optional description of the loan purpose or any additional notes.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Loan Terms -->
+      <section class="gradient-border rounded-xl bg-white">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            Loan Terms
+          </h2>
+          <p class="text-sm text-gray-500 mt-1">
+            Interest rate is <span class="font-medium">monthly %</span>. Processing fee is paid upfront separately (not included in expected total).
+          </p>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div>
+            <label for="{{ form.principal.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Principal Amount (UGX) <span class="text-red-600">*</span>
+            </label>
+            {{ form.principal }}
+            {% if form.principal.errors %}<p class="field-error">{{ form.principal.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div>
+            <label for="{{ form.processing_fee.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Processing Fee (UGX)
+            </label>
+            {{ form.processing_fee }}
+            {% if form.processing_fee.errors %}<p class="field-error">{{ form.processing_fee.errors.0 }}</p>{% endif %}
+            <p class="help">Paid once before repayments. Separate from expected total.</p>
+          </div>
+
+          <div>
+            <label for="{{ form.period.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Loan Period (Months) <span class="text-red-600">*</span>
+            </label>
+            {{ form.period }}
+            {% if form.period.errors %}<p class="field-error">{{ form.period.errors.0 }}</p>{% endif %}
+            <p class="help">Total loan duration in months.</p>
+          </div>
+
+          <div>
+            <label for="{{ form.rate.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Interest Rate (Monthly %) <span class="text-red-600">*</span>
+            </label>
+            {{ form.rate }}
+            {% if form.rate.errors %}<p class="field-error">{{ form.rate.errors.0 }}</p>{% endif %}
+            <p class="help">Monthly rate used for interest calculation.</p>
+          </div>
+
+          <div class="lg:col-span-4">
+            <label for="{{ form.payment_mode.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Payment Mode <span class="text-red-600">*</span>
+            </label>
+            <div class="max-w-xs">
+              {{ form.payment_mode }}
+            </div>
+            {% if form.payment_mode.errors %}<p class="field-error">{{ form.payment_mode.errors.0 }}</p>{% endif %}
+            <p class="help">Daily = months×30 installments, Weekly = months×4, Monthly = months×1.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Calculated Amounts & Dates (MODEL-ACCURATE) -->
+      <section class="gradient-border rounded-xl bg-white">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2z"></path>
+            </svg>
+            Calculated Amounts & Dates
+          </h2>
+          <p class="text-sm text-gray-500 mt-1">
+            Expected total and installment are auto-calculated using the monthly rate. Processing fee is excluded.
+          </p>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div>
+            <label for="{{ form.start_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Start Date <span class="text-red-600">*</span>
+            </label>
+            {{ form.start_date }}
+            {% if form.start_date.errors %}<p class="field-error">{{ form.start_date.errors.0 }}</p>{% endif %}
+            <p class="help">Used to compute due date (start + months).</p>
+          </div>
+
+          <div>
+            <label for="{{ form.due_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Due Date
+            </label>
+            {{ form.due_date }}
+            {% if form.due_date.errors %}<p class="field-error">{{ form.due_date.errors.0 }}</p>{% endif %}
+            <p class="help">Auto-calculated; no need to edit.</p>
+          </div>
+
+          <div>
+            <label for="{{ form.expected_total.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Expected Total (UGX)
+            </label>
+            {{ form.expected_total }}
+            {% if form.expected_total.errors %}<p class="field-error">{{ form.expected_total.errors.0 }}</p>{% endif %}
+            <p class="help">Principal + Interest (monthly rate × months). Fee excluded.</p>
+          </div>
+
+          <div>
+            <label for="{{ form.installment_amount.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Installment Amount (UGX)
+            </label>
+            {{ form.installment_amount }}
+            {% if form.installment_amount.errors %}<p class="field-error">{{ form.installment_amount.errors.0 }}</p>{% endif %}
+            <p class="help">Expected total ÷ number of installments (based on mode).</p>
+          </div>
+
+          <div class="md:col-span-2 lg:col-span-4">
+            <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Loan Status
+            </label>
+            <div class="max-w-xs">
+              {{ form.status }}
+            </div>
+            {% if form.status.errors %}<p class="field-error">{{ form.status.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Evidence Documents -->
+      <section class="gradient-border rounded-xl bg-white">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Supporting Documents
+          </h2>
+          <p class="text-sm text-gray-500 mt-1">Upload evidence documents (PDF, JPG, PNG, WebP)</p>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Evidence 1 -->
+          <div class="file-upload-area rounded-xl p-4 text-center">
+            <label for="{{ form.evidence_letter_1.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Evidence Document 1
+            </label>
+            {{ form.evidence_letter_1 }}
+            {% if form.evidence_letter_1.errors %}<p class="field-error">{{ form.evidence_letter_1.errors.0 }}</p>{% endif %}
+            <p class="help">LC1 letter or recommendation.</p>
+            {% if form.instance.evidence_letter_1 %}
+              <a href="{{ form.instance.evidence_letter_1.url }}" target="_blank"
+                 class="inline-flex items-center text-sm text-brand hover:opacity-80 mt-2">View Current File</a>
+            {% endif %}
+          </div>
+
+          <!-- Evidence 2 -->
+          <div class="file-upload-area rounded-xl p-4 text-center">
+            <label for="{{ form.evidence_letter_2.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Evidence Document 2
+            </label>
+            {{ form.evidence_letter_2 }}
+            {% if form.evidence_letter_2.errors %}<p class="field-error">{{ form.evidence_letter_2.errors.0 }}</p>{% endif %}
+            <p class="help">Additional supporting document.</p>
+            {% if form.instance.evidence_letter_2 %}
+              <a href="{{ form.instance.evidence_letter_2.url }}" target="_blank"
+                 class="inline-flex items-center text-sm text-brand hover:opacity-80 mt-2">View Current File</a>
+            {% endif %}
+          </div>
+
+          <!-- Evidence 3 -->
+          <div class="file-upload-area rounded-xl p-4 text-center">
+            <label for="{{ form.evidence_letter_3.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              Evidence Document 3
+            </label>
+            {{ form.evidence_letter_3 }}
+            {% if form.evidence_letter_3.errors %}<p class="field-error">{{ form.evidence_letter_3.errors.0 }}</p>{% endif %}
+            <p class="help">Additional supporting document.</p>
+            {% if form.instance.evidence_letter_3 %}
+              <a href="{{ form.instance.evidence_letter_3.url }}" target="_blank"
+                 class="inline-flex items-center text-sm text-brand hover:opacity-80 mt-2">View Current File</a>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Preview (Create only) -->
+      {% if not form.instance.pk %}
+        <section class="preview-card rounded-xl p-6">
+          <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
+            <h3 class="text-lg font-semibold text-brand flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Loan Calculation Preview
+            </h3>
+            <span class="text-xs text-gray-600">
+              Interest uses <strong>monthly %</strong> and expected total excludes processing fee.
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="text-center p-4 bg-white rounded-lg border" style="border-color:var(--brand-100);">
+              <div class="font-semibold text-sm" style="color:var(--brand-700);">Expected Total</div>
+              <div class="text-xl font-bold text-gray-900 mt-1" id="preview-total">UGX 0.00</div>
+              <div class="text-xs text-gray-500 mt-1">Principal + Interest (fee excluded)</div>
+            </div>
+
+            <div class="text-center p-4 bg-white rounded-lg border" style="border-color:var(--brand-100);">
+              <div class="font-semibold text-sm" style="color:var(--brand-700);">Interest Amount</div>
+              <div class="text-xl font-bold text-gray-900 mt-1" id="preview-interest">UGX 0.00</div>
+              <div class="text-xs text-gray-500 mt-1">principal × monthly% × months</div>
+            </div>
+
+            <div class="text-center p-4 bg-white rounded-lg border" style="border-color:var(--brand-100);">
+              <div class="font-semibold text-sm" style="color:var(--brand-700);">Installment Amount</div>
+              <div class="text-xl font-bold text-gray-900 mt-1" id="preview-installment">UGX 0.00</div>
+              <div class="text-xs text-gray-500 mt-1">based on payment mode</div>
+            </div>
+          </div>
+
+          <div class="mt-4 text-sm text-gray-600">
+            Processing fee (if any) is paid upfront separately: <span class="font-semibold" id="preview-fee">UGX 0.00</span>
+          </div>
+        </section>
+      {% endif %}
+
+      {% if form.instance.pk %}
+        <div class="text-center text-sm text-gray-500 py-4">
+          Loan created on {{ form.instance.created|date:"M j, Y" }}
+          {% if form.instance.created_by %}by {{ form.instance.created_by.get_full_name }}{% endif %}
+        </div>
+      {% endif %}
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_body %}
+<script>
+(function () {
+  const principalEl     = document.getElementById('{{ form.principal.id_for_label }}');
+  const processingFeeEl = document.getElementById('{{ form.processing_fee.id_for_label }}');
+  const periodEl        = document.getElementById('{{ form.period.id_for_label }}'); // months
+  const rateEl          = document.getElementById('{{ form.rate.id_for_label }}');   // monthly %
+  const paymentModeEl   = document.getElementById('{{ form.payment_mode.id_for_label }}');
+  const startDateEl     = document.getElementById('{{ form.start_date.id_for_label }}');
+  const expectedTotalEl = document.getElementById('{{ form.expected_total.id_for_label }}');
+  const installmentEl   = document.getElementById('{{ form.installment_amount.id_for_label }}');
+  const dueDateEl       = document.getElementById('{{ form.due_date.id_for_label }}');
+
+  const previewTotal       = document.getElementById('preview-total');
+  const previewInterest    = document.getElementById('preview-interest');
+  const previewInstallment = document.getElementById('preview-installment');
+  const previewFee         = document.getElementById('preview-fee');
+
+  // computed fields read-only
+  [expectedTotalEl, installmentEl, dueDateEl].forEach(el => { if (el) el.readOnly = true; });
+
+  const round2 = (n) => (isFinite(n) ? (Math.round((+n + Number.EPSILON) * 100) / 100) : 0);
+  const f2 = (n) => round2(n).toFixed(2);
+  const fmtUGX = (n) => `UGX ${Number(round2(n)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  // add months like relativedelta(months=period)
+  function addMonthsISO(yyyyMmDd, months) {
+    if (!yyyyMmDd) return '';
+    const parts = yyyyMmDd.split('-').map(Number);
+    if (parts.length !== 3) return '';
+    const [y, m, d] = parts;
+    if (!y || !m || !d) return '';
+
+    const dt = new Date(Date.UTC(y, m - 1, 1));
+    dt.setUTCMonth(dt.getUTCMonth() + (months|0));
+    const lastDay = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate();
+    dt.setUTCDate(Math.min(d, lastDay));
+
+    const yy = dt.getUTCFullYear();
+    const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getUTCDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+
+  function totalInstallments(months, mode) {
+    const m = (mode || 'MONTHLY').toUpperCase();
+    const p = Math.max(1, parseInt(months || '0', 10) || 0);
+    if (m === 'DAILY')  return p * 30;
+    if (m === 'WEEKLY') return p * 4;
+    return p; // MONTHLY
+  }
+
+  function calc() {
+    const principal = parseFloat(principalEl?.value || '0') || 0;
+    const fee       = parseFloat(processingFeeEl?.value || '0') || 0; // not included in expected_total
+    const months    = parseInt(periodEl?.value || '0', 10) || 0;
+    const ratePct   = parseFloat(rateEl?.value || '0') || 0; // monthly %
+    const mode      = (paymentModeEl?.value || 'MONTHLY').toUpperCase();
+    const startISO  = startDateEl?.value || '';
+
+    if (principal > 0 && months > 0 && ratePct >= 0) {
+      const interest = principal * (ratePct / 100.0) * months;
+      const expectedTotal = principal + interest;
+
+      const n = Math.max(1, totalInstallments(months, mode));
+      const installment = expectedTotal / n;
+
+      if (expectedTotalEl) expectedTotalEl.value = f2(expectedTotal);
+      if (installmentEl)   installmentEl.value   = f2(installment);
+
+      if (previewTotal)       previewTotal.textContent       = fmtUGX(expectedTotal);
+      if (previewInterest)    previewInterest.textContent    = fmtUGX(interest);
+      if (previewInstallment) previewInstallment.textContent = fmtUGX(installment);
+    } else {
+      if (expectedTotalEl) expectedTotalEl.value = '0.00';
+      if (installmentEl)   installmentEl.value   = '0.00';
+      if (previewTotal)       previewTotal.textContent       = 'UGX 0.00';
+      if (previewInterest)    previewInterest.textContent    = 'UGX 0.00';
+      if (previewInstallment) previewInstallment.textContent = 'UGX 0.00';
+    }
+
+    if (dueDateEl) {
+      dueDateEl.value = (startISO && months > 0) ? addMonthsISO(startISO, months) : '';
+    }
+
+    if (previewFee) previewFee.textContent = fmtUGX(fee);
+  }
+
+  // default start date to today if empty
+  if (startDateEl && !startDateEl.value) {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    startDateEl.value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  [principalEl, processingFeeEl, periodEl, rateEl, paymentModeEl, startDateEl]
+    .filter(Boolean)
+    .forEach(el => { el.addEventListener('input', calc); el.addEventListener('change', calc); });
+
+  calc();
+})();
+</script>
+{% endblock %}
