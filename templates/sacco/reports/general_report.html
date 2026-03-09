@@ -3,114 +3,157 @@
 
 {% block content %}
 <div class="space-y-8">
+  <!-- Header Section -->
   <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
     <div>
       <p class="text-sm font-medium text-amber-700">Overall Summary</p>
       <h1 class="text-3xl font-bold tracking-tight text-slate-900">General Report</h1>
     </div>
     <div class="flex gap-3">
-      <button onclick="window.print()" class="btn-secondary">Print</button>
-      <a href="{% url 'sacco:reports_home' %}" class="btn-primary">Back to Reports</a>
+      <button onclick="window.print()" class="btn-secondary">Print Report</button>
+      <a href="{% url 'sacco:reports_home' %}" class="btn-primary">← Back to Reports</a>
     </div>
   </div>
 
+  <!-- Key Metrics at a Glance -->
   <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
     <div class="rounded-2xl border bg-white p-5 shadow-sm">
-      <p class="text-sm text-slate-500">Total Members</p>
+      <p class="text-sm text-slate-500">Active Members</p>
       <p class="mt-2 text-3xl font-bold text-slate-900">{{ member_count }}</p>
+      <p class="mt-1 text-xs text-slate-400">Currently registered</p>
     </div>
 
     <div class="rounded-2xl border bg-white p-5 shadow-sm">
-      <p class="text-sm text-slate-500">Total Loans</p>
+      <p class="text-sm text-slate-500">Total Loans Issued</p>
       <p class="mt-2 text-3xl font-bold text-slate-900">{{ loan_stats.total_loans }}</p>
+      <p class="mt-1 text-xs text-slate-400">All-time loans</p>
     </div>
 
     <div class="rounded-2xl border bg-white p-5 shadow-sm">
-      <p class="text-sm text-slate-500">Total Principal</p>
+      <p class="text-sm text-slate-500">Total Principal Lent</p>
       <p class="mt-2 text-3xl font-bold text-slate-900">UGX {{ loan_stats.total_principal|floatformat:0 }}</p>
+      <p class="mt-1 text-xs text-slate-400">Original loan amounts</p>
     </div>
 
     <div class="rounded-2xl border bg-white p-5 shadow-sm">
-      <p class="text-sm text-slate-500">Total Expected</p>
+      <p class="text-sm text-slate-500">Expected Repayment</p>
       <p class="mt-2 text-3xl font-bold text-slate-900">UGX {{ loan_stats.total_expected|floatformat:0 }}</p>
+      <p class="mt-1 text-xs text-slate-400">Principal + interest</p>
     </div>
 
     <div class="rounded-2xl border bg-white p-5 shadow-sm">
-      <p class="text-sm text-slate-500">Total Paid</p>
+      <p class="text-sm text-slate-500">Amount Recovered</p>
       <p class="mt-2 text-3xl font-bold text-emerald-700">UGX {{ loan_stats.total_paid|floatformat:0 }}</p>
+      <p class="mt-1 text-xs text-emerald-600">Successfully collected</p>
     </div>
 
     <div class="rounded-2xl border bg-white p-5 shadow-sm">
       <p class="text-sm text-slate-500">Outstanding Balance</p>
       <p class="mt-2 text-3xl font-bold text-rose-700">UGX {{ total_balance|floatformat:0 }}</p>
+      <p class="mt-1 text-xs text-rose-600">Yet to be paid</p>
     </div>
 
     <div class="rounded-2xl border bg-white p-5 shadow-sm">
-      <p class="text-sm text-slate-500">Open Loans</p>
+      <p class="text-sm text-slate-500">Active Loans</p>
       <p class="mt-2 text-3xl font-bold text-slate-900">{{ loan_stats.open_loans }}</p>
+      <p class="mt-1 text-xs text-slate-400">Currently being repaid</p>
     </div>
 
     <div class="rounded-2xl border bg-white p-5 shadow-sm">
-      <p class="text-sm text-slate-500">Closed Loans</p>
+      <p class="text-sm text-slate-500">Completed Loans</p>
       <p class="mt-2 text-3xl font-bold text-slate-900">{{ loan_stats.closed_loans }}</p>
+      <p class="mt-1 text-xs text-slate-400">Fully paid off</p>
     </div>
   </div>
 
+  <!-- Detailed Breakdowns -->
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <!-- Loan Health Overview -->
     <div class="rounded-3xl border bg-white p-6 shadow-sm">
-      <h2 class="text-xl font-semibold text-slate-900">Loan Status Summary</h2>
+      <h2 class="text-xl font-semibold text-slate-900">Loan Portfolio Health</h2>
+      <p class="mt-1 text-sm text-slate-500">Current status of all loans</p>
+      
       <div class="mt-5 space-y-4">
         <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span class="text-sm text-slate-600">Overdue Loans</span>
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-rose-500"></span>
+            <span class="text-sm text-slate-600">Overdue loans needing attention</span>
+          </div>
           <span class="font-semibold text-rose-700">{{ loan_stats.overdue_loans }}</span>
         </div>
 
         <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span class="text-sm text-slate-600">Open Loans</span>
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+            <span class="text-sm text-slate-600">Active loans in good standing</span>
+          </div>
           <span class="font-semibold text-slate-900">{{ loan_stats.open_loans }}</span>
         </div>
 
         <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span class="text-sm text-slate-600">Closed Loans</span>
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span class="text-sm text-slate-600">Successfully completed loans</span>
+          </div>
           <span class="font-semibold text-slate-900">{{ loan_stats.closed_loans }}</span>
         </div>
       </div>
     </div>
 
+    <!-- Expense Tracking -->
     <div class="rounded-3xl border bg-white p-6 shadow-sm">
-      <h2 class="text-xl font-semibold text-slate-900">Expense Summary</h2>
+      <h2 class="text-xl font-semibold text-slate-900">Expense Overview</h2>
+      <p class="mt-1 text-sm text-slate-500">Breakdown of organizational expenses</p>
+      
       <div class="mt-5 space-y-4">
         <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span class="text-sm text-slate-600">Total Expenses</span>
+          <span class="text-sm text-slate-600">Total expenses recorded</span>
           <span class="font-semibold text-slate-900">{{ expense_stats.total_expenses }}</span>
         </div>
 
         <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span class="text-sm text-slate-600">Pending</span>
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+            <span class="text-sm text-slate-600">Awaiting approval</span>
+          </div>
           <span class="font-semibold text-amber-700">{{ expense_stats.pending_expenses }}</span>
         </div>
 
         <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span class="text-sm text-slate-600">Approved</span>
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-sky-500"></span>
+            <span class="text-sm text-slate-600">Approved, ready for payment</span>
+          </div>
           <span class="font-semibold text-sky-700">{{ expense_stats.approved_expenses }}</span>
         </div>
 
         <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span class="text-sm text-slate-600">Paid</span>
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span class="text-sm text-slate-600">Successfully paid out</span>
+          </div>
           <span class="font-semibold text-emerald-700">{{ expense_stats.paid_expenses }}</span>
         </div>
 
         <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span class="text-sm text-slate-600">Rejected</span>
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-rose-500"></span>
+            <span class="text-sm text-slate-600">Rejected/not approved</span>
+          </div>
           <span class="font-semibold text-rose-700">{{ expense_stats.rejected_expenses }}</span>
         </div>
 
-        <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span class="text-sm text-slate-600">Total Expense Amount</span>
+        <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 border-t border-slate-200 mt-2">
+          <span class="text-sm font-medium text-slate-700">Total expense value</span>
           <span class="font-semibold text-slate-900">UGX {{ expense_stats.total_expense_amount|floatformat:0 }}</span>
         </div>
       </div>
     </div>
   </div>
+  
+  <!-- Footer Note -->
+  <p class="text-xs text-slate-400 text-center mt-8">
+    Report generated automatically • All amounts in UGX
+  </p>
 </div>
 {% endblock %}
