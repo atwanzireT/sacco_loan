@@ -7,6 +7,7 @@
   <title>{% block title %}Vaulta Capital Growth{% endblock %}</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
   <style>
     :root{
@@ -96,21 +97,75 @@
       transition:opacity .4s ease;
     }
 
+    .select2-container{
+      width:100% !important;
+    }
+
     .select2-container .select2-selection--single{
       height:42px !important;
       border-radius:12px !important;
-      border:1px solid #e5e7eb !important;
+      border:1px solid #d1d5db !important;
       display:flex !important;
       align-items:center !important;
       padding:0 12px !important;
+      background:#fff !important;
+      box-shadow:none !important;
     }
+
     .select2-container--default .select2-selection--single .select2-selection__rendered{
       color:#111827 !important;
       line-height:40px !important;
       padding-left:0 !important;
+      padding-right:24px !important;
     }
+
+    .select2-container--default .select2-selection--single .select2-selection__placeholder{
+      color:#9ca3af !important;
+    }
+
     .select2-container--default .select2-selection--single .select2-selection__arrow{
       height:40px !important;
+      right:10px !important;
+    }
+
+    .select2-container--default.select2-container--focus .select2-selection--single{
+      border-color:var(--brand) !important;
+      box-shadow:0 0 0 3px var(--brand-ring) !important;
+    }
+
+    .select2-dropdown{
+      border-radius:12px !important;
+      border:1px solid #e5e7eb !important;
+      overflow:hidden !important;
+      box-shadow:0 10px 25px rgba(0,0,0,.08) !important;
+    }
+
+    .select2-search--dropdown{
+      padding:10px !important;
+      background:#fff !important;
+    }
+
+    .select2-search__field{
+      width:100% !important;
+      border-radius:8px !important;
+      border:1px solid #d1d5db !important;
+      padding:8px 10px !important;
+      outline:none !important;
+    }
+
+    .select2-results__option{
+      padding:10px 12px !important;
+      font-size:.875rem !important;
+    }
+
+    .select2-results__option--highlighted[aria-selected]{
+      background-color:var(--brand) !important;
+      color:#fff !important;
+    }
+
+    .select2-container--default .select2-results__option[aria-selected=true]{
+      background:#f9fafb !important;
+      color:#111827 !important;
     }
   </style>
 
@@ -346,6 +401,20 @@
         }, 500);
       }
     }, 3500);
+
+    document.addEventListener("DOMContentLoaded", function () {
+      if (window.jQuery) {
+        $(".django-select2").each(function () {
+          const $el = $(this);
+
+          if (!$el.attr("data-placeholder")) {
+            $el.attr("data-placeholder", "Search and select...");
+          }
+
+          $el.trigger("change");
+        });
+      }
+    });
   </script>
 
   {% block extra_js %}{% endblock %}

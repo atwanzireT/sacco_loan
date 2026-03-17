@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from django.utils import timezone
-
 from django_select2 import forms as s2forms
 
 from .models import (
@@ -18,6 +17,7 @@ from .models import (
     MONEY,
     ZERO,
     quantize_money,
+    quantize_percent,
 )
 
 # =============================================================================
@@ -54,27 +54,32 @@ class TailwindFormMixin:
         super().__init__(*args, **kwargs)
 
         for name, field in self.fields.items():
-            w = field.widget
+            widget = field.widget
 
-            if isinstance(w, (forms.TextInput, forms.NumberInput)) and "placeholder" not in w.attrs:
-                w.attrs["placeholder"] = field.label or name.replace("_", " ").title()
+            if isinstance(widget, (forms.TextInput, forms.NumberInput)) and "placeholder" not in widget.attrs:
+                widget.attrs["placeholder"] = field.label or name.replace("_", " ").title()
 
             if isinstance(
-                w,
-                (forms.TextInput, forms.NumberInput, forms.EmailInput, forms.URLInput, forms.PasswordInput),
+                widget,
+                (
+                    forms.TextInput,
+                    forms.NumberInput,
+                    forms.EmailInput,
+                    forms.URLInput,
+                    forms.PasswordInput,
+                    forms.DateInput,
+                ),
             ):
-                _append_class(w, INPUT_CLS)
-            elif isinstance(w, forms.Select):
-                _append_class(w, SELECT_CLS)
-            elif isinstance(w, forms.Textarea):
-                _append_class(w, TEXTAREA_CLS)
-                w.attrs.setdefault("rows", 3)
-            elif isinstance(w, (forms.FileInput, forms.ClearableFileInput)):
-                _append_class(w, FILE_CLS)
-            elif isinstance(w, forms.DateInput):
-                _append_class(w, INPUT_CLS)
+                _append_class(widget, INPUT_CLS)
+            elif isinstance(widget, forms.Select):
+                _append_class(widget, SELECT_CLS)
+            elif isinstance(widget, forms.Textarea):
+                _append_class(widget, TEXTAREA_CLS)
+                widget.attrs.setdefault("rows", 3)
+            elif isinstance(widget, (forms.FileInput, forms.ClearableFileInput)):
+                _append_class(widget, FILE_CLS)
             else:
-                _append_class(w, INPUT_CLS)
+                _append_class(widget, INPUT_CLS)
 
 
 # =============================================================================
@@ -123,9 +128,9 @@ class CleanStrMixin:
         cleaned = super().clean()
         for name, field in self.fields.items():
             if isinstance(field, forms.CharField):
-                val = cleaned.get(name)
-                if isinstance(val, str):
-                    cleaned[name] = val.strip()
+                value = cleaned.get(name)
+                if isinstance(value, str):
+                    cleaned[name] = value.strip()
         return cleaned
 
 
@@ -141,6 +146,7 @@ def validate_max_filesize(file, *, max_mb: int = 5):
 # Select2 widgets
 # =============================================================================
 class MemberWidget(s2forms.ModelSelect2Widget):
+    model = Member
     search_fields = [
         "member_id__icontains",
         "first_name__icontains",
@@ -149,8 +155,12 @@ class MemberWidget(s2forms.ModelSelect2Widget):
         "nin__icontains",
     ]
 
+    def label_from_instance(self, obj):
+        return f"{obj.member_id} - {obj.first_name} {obj.last_name} ({obj.phone})"
+
 
 class LoanWidget(s2forms.ModelSelect2Widget):
+    model = Loan
     search_fields = [
         "loan_id__icontains",
         "member__member_id__icontains",
@@ -158,6 +168,9 @@ class LoanWidget(s2forms.ModelSelect2Widget):
         "member__last_name__icontains",
         "member__phone__icontains",
     ]
+
+    def label_from_instance(self, obj):
+        return f"{obj.loan_id} - {obj.member.full_name} (Bal: UGX {obj.balance:,.2f})"
 
 
 # =============================================================================
@@ -194,7 +207,7 @@ class MemberForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
 
     def clean_phone(self) -> str:
         phone = (self.cleaned_data.get("phone") or "").strip()
-        if not any(phone.startswith(p) for p in ("07", "03", "+256")):
+        if not any(phone.startswith(prefix) for prefix in ("07", "03", "+256")):
             raise ValidationError("Enter a valid Ugandan phone (07…, 03…, or +256…).")
         return phone
 
@@ -212,29 +225,49 @@ class MemberForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
         validate_max_filesize(f)
         return f
 
-    def clean_id_card_front(self): return self._clean_file("id_card_front")
-    def clean_id_card_back(self): return self._clean_file("id_card_back")
-    def clean_lc1_letter(self): return self._clean_file("lc1_letter")
-    def clean_recommendation_letter_1(self): return self._clean_file("recommendation_letter_1")
-    def clean_recommendation_letter_2(self): return self._clean_file("recommendation_letter_2")
+    def clean_id_card_front(self):
+        return self._clean_file("id_card_front")
+
+    def clean_id_card_back(self):
+        return self._clean_file("id_card_back")
+
+    def clean_lc1_letter(self):
+        return self._clean_file("lc1_letter")
+
+    def clean_recommendation_letter_1(self):
+        return self._clean_file("recommendation_letter_1")
+
+    def clean_recommendation_letter_2(self):
+        return self._clean_file("recommendation_letter_2")
 
 
 # =============================================================================
 # Loan form
 # =============================================================================
 class LoanForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
-    principal = forms.DecimalField(min_value=MONEY, widget=MoneyInput(), help_text="Loan principal amount")
+    principal = forms.DecimalField(
+        min_value=MONEY,
+        widget=MoneyInput(),
+        help_text="Loan principal amount",
+    )
 
     processing_fee = forms.DecimalField(
         min_value=ZERO,
         required=False,
         widget=MoneyInput(),
-        help_text="One-time processing fee (paid once before repayments).",
+        help_text="One-time processing fee paid before loan repayments.",
     )
 
-    processing_fee_paid = forms.BooleanField(required=False, help_text="Tick if the processing fee has been paid.")
+    processing_fee_paid = forms.BooleanField(
+        required=False,
+        help_text="Tick if the processing fee has been paid.",
+    )
 
-    processing_fee_paid_on = forms.DateField(required=False, widget=DateInput(), label="Processing fee paid on")
+    processing_fee_paid_on = forms.DateField(
+        required=False,
+        widget=DateInput(),
+        label="Processing fee paid on",
+    )
 
     processing_fee_method = forms.ChoiceField(
         required=False,
@@ -257,19 +290,29 @@ class LoanForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
         widget=forms.TextInput(attrs={"placeholder": "Optional note (max 160 chars)"}),
     )
 
-    period = forms.IntegerField(min_value=1, widget=forms.NumberInput(), help_text="Loan duration in months")
+    period = forms.IntegerField(
+        min_value=1,
+        widget=forms.NumberInput(),
+        help_text="Loan duration in months",
+    )
 
     rate = forms.DecimalField(
         min_value=Decimal("0.00"),
         max_value=Decimal("100.00"),
         widget=PercentageInput(),
-        help_text="Monthly interest rate (%)",  # ✅ match your model logic
+        help_text="Monthly interest rate (%)",
         label="Monthly interest rate (%)",
     )
 
-    payment_mode = forms.ChoiceField(choices=Loan.PaymentMode.choices, widget=forms.Select())
+    payment_mode = forms.ChoiceField(
+        choices=Loan.PaymentMode.choices,
+        widget=forms.Select(),
+    )
 
-    start_date = forms.DateField(widget=DateInput(), required=False)
+    start_date = forms.DateField(
+        widget=DateInput(),
+        required=False,
+    )
 
     expected_total = forms.DecimalField(
         required=False,
@@ -320,7 +363,13 @@ class LoanForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
             "evidence_letter_3",
         ]
         widgets = {
-            "member": MemberWidget(),  # ✅ must be instantiated
+            "member": MemberWidget(
+                attrs={
+                    "data-placeholder": "Search member by ID, name, phone or NIN",
+                    "data-minimum-input-length": 1,
+                    "style": "width: 100%;",
+                }
+            ),
             "status": forms.Select(),
             "note": forms.TextInput(attrs={"placeholder": "Optional note (max 200 chars)"}),
         }
@@ -328,43 +377,47 @@ class LoanForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Computed fields: display only
         for fname in ("expected_total", "installment_amount", "due_date"):
             if fname in self.fields:
                 self.fields[fname].disabled = True
                 self.fields[fname].required = False
 
-        # Default start date
         if not (self.data or getattr(self.instance, "start_date", None)):
             self.initial.setdefault("start_date", timezone.localdate())
 
-        # Seed for edit
         if self.instance and self.instance.pk:
             self.initial.setdefault("expected_total", self.instance.expected_total)
             self.initial.setdefault("installment_amount", self.instance.installment_amount)
             self.initial.setdefault("due_date", self.instance.due_date)
-
             self.initial.setdefault("processing_fee_paid", self.instance.processing_fee_paid)
             self.initial.setdefault("processing_fee_paid_on", self.instance.processing_fee_paid_on)
             self.initial.setdefault("processing_fee_method", self.instance.processing_fee_method)
             self.initial.setdefault("processing_fee_receipt", self.instance.processing_fee_receipt)
             self.initial.setdefault("processing_fee_note", self.instance.processing_fee_note)
 
-        # ✅ IMPORTANT FIX:
-        # DO NOT exclude members with open loans anymore.
         self.fields["member"].queryset = Member.objects.order_by("member_id", "first_name", "last_name")
         self.fields["member"].help_text = "Search by member ID, name, phone or NIN."
+        self.fields["member"].widget.attrs.update({
+            "data-placeholder": "Search member by ID, name, phone or NIN",
+            "data-minimum-input-length": 1,
+            "style": "width: 100%;",
+        })
 
     def _clean_file(self, key: str):
         f = self.cleaned_data.get(key)
         validate_max_filesize(f)
         return f
 
-    def clean_evidence_letter_1(self): return self._clean_file("evidence_letter_1")
-    def clean_evidence_letter_2(self): return self._clean_file("evidence_letter_2")
-    def clean_evidence_letter_3(self): return self._clean_file("evidence_letter_3")
+    def clean_evidence_letter_1(self):
+        return self._clean_file("evidence_letter_1")
 
-    def clean_processing_fee(self) -> Decimal:
+    def clean_evidence_letter_2(self):
+        return self._clean_file("evidence_letter_2")
+
+    def clean_evidence_letter_3(self):
+        return self._clean_file("evidence_letter_3")
+
+    def clean_processing_fee(self):
         fee = self.cleaned_data.get("processing_fee")
         return quantize_money(fee or ZERO)
 
@@ -372,8 +425,7 @@ class LoanForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
         rate = self.cleaned_data.get("rate")
         if rate is None:
             return rate
-        # keep 2dp, but do not use quantize_money name-wise; still okay
-        rate = quantize_money(rate)
+        rate = quantize_percent(rate)
         if rate > Decimal("100.00"):
             raise ValidationError("Interest rate cannot exceed 100%.")
         return rate
@@ -465,7 +517,13 @@ class PaymentForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
         model = Payment
         fields = ["loan", "date", "amount", "method", "receipt", "note"]
         widgets = {
-            "loan": LoanWidget(),  # ✅ instantiate
+            "loan": LoanWidget(
+                attrs={
+                    "data-placeholder": "Search open loan by loan ID, member ID or member name",
+                    "data-minimum-input-length": 1,
+                    "style": "width: 100%;",
+                }
+            ),
             "method": forms.Select(),
             "receipt": forms.TextInput(attrs={"placeholder": "Receipt/Ref # (optional)"}),
             "note": forms.TextInput(attrs={"placeholder": "Optional note (max 160 chars)"}),
@@ -477,14 +535,17 @@ class PaymentForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
         if not (self.data or getattr(self.instance, "date", None)):
             self.initial.setdefault("date", timezone.localdate())
 
-        # Only OPEN loans should receive repayments
         self.fields["loan"].queryset = Loan.objects.filter(status=Loan.Status.OPEN).select_related("member")
+        self.fields["loan"].widget.attrs.update({
+            "data-placeholder": "Search open loan by loan ID, member ID or member name",
+            "data-minimum-input-length": 1,
+            "style": "width: 100%;",
+        })
 
-        # ✅ FIX: Payment has no loan_id, so check loan
         if self.instance and self.instance.pk and getattr(self.instance, "loan", None):
             self.fields["loan"].help_text = f"Current balance: UGX {self.instance.loan.balance:,.2f}"
 
-    def clean_amount(self) -> Decimal:
+    def clean_amount(self):
         return quantize_money(self.cleaned_data["amount"])
 
     def clean(self):
@@ -494,7 +555,6 @@ class PaymentForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
         if cleaned.get("amount") is not None:
             cleaned["amount"] = quantize_money(cleaned["amount"])
 
-        # Run the MODEL validation rules safely (fee rule + overpay)
         loan = cleaned.get("loan") or getattr(self.instance, "loan", None)
         if loan:
             temp = Payment(
@@ -536,7 +596,7 @@ class InlinePaymentForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
             "note": forms.TextInput(attrs={"placeholder": "Optional note"}),
         }
 
-    def clean_amount(self) -> Decimal:
+    def clean_amount(self):
         return quantize_money(self.cleaned_data["amount"])
 
     def clean(self):
@@ -548,7 +608,7 @@ class InlinePaymentForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
 
 
 # =============================================================================
-# Payment formset under Loan (uses InlinePaymentForm)
+# Payment formset under Loan
 # =============================================================================
 PaymentFormSet = inlineformset_factory(
     parent_model=Loan,
@@ -620,7 +680,7 @@ class ExpenseForm(TailwindFormMixin, CleanStrMixin, forms.ModelForm):
 
 
 # =============================================================================
-# Expense Approval form (finance team)
+# Expense Approval form
 # =============================================================================
 class ExpenseApprovalForm(TailwindFormMixin, forms.ModelForm):
     class Meta:
@@ -707,7 +767,13 @@ class LoanSearchForm(TailwindFormMixin, forms.Form):
     member = forms.ModelChoiceField(
         queryset=Member.objects.all().order_by("member_id", "first_name", "last_name"),
         required=False,
-        widget=MemberWidget(),
+        widget=MemberWidget(
+            attrs={
+                "data-placeholder": "Search member...",
+                "data-minimum-input-length": 1,
+                "style": "width: 100%;",
+            }
+        ),
         label="Member",
     )
 
@@ -719,6 +785,15 @@ class LoanSearchForm(TailwindFormMixin, forms.Form):
         widget=forms.TextInput(attrs={"placeholder": "Search by loan ID, member ID, name..."}),
         label="Search",
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["member"].queryset = Member.objects.order_by("member_id", "first_name", "last_name")
+        self.fields["member"].widget.attrs.update({
+            "data-placeholder": "Search member...",
+            "data-minimum-input-length": 1,
+            "style": "width: 100%;",
+        })
 
     def clean(self):
         cleaned = super().clean()
