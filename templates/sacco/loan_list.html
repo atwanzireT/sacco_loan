@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load humanize %}
 
-{% block title %}Loans — Great Pearl SACCO{% endblock %}
+{% block title %}Loans — Vaulta Capital Growth{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -126,21 +126,80 @@
 <div class="min-h-screen bg-gray-50/40 py-6">
   <div class="page-wrap px-4 sm:px-6 lg:px-8">
 
-    <!-- Header -->
+    <!-- Header with Export Button -->
     <div class="mb-6">
       <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
           <h1 class="text-2xl font-extrabold text-gray-900">Loan Portfolio</h1>
           <p class="text-gray-600 mt-1">Search, filter and track SACCO loans</p>
         </div>
-        {% if request.user.is_authenticated %}
-          <a href="{% url 'sacco:loan_create' %}" class="btn btn-primary">
-            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-            </svg>
-            New Loan
-          </a>
-        {% endif %}
+        
+        <div class="flex gap-3">
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'sacco:loan_create' %}" class="btn btn-primary">
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+              New Loan
+            </a>
+          {% endif %}
+
+          <!-- Export Button - Only for Finance/Admin users -->
+          {% if request.user.is_authenticated and request.user.is_superuser or request.user.role == 'FINANCE' %}
+            <div class="relative" id="exportDropdownLocal">
+              <button type="button" onclick="toggleLocalDropdown()" class="btn btn-outline">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Export
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              <div id="localDropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                <div class="py-1">
+                  <a href="{% url 'sacco:export_loans_csv' %}?{{ request.GET.urlencode }}" 
+                     class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                    </svg>
+                    Export Current View (CSV)
+                  </a>
+                  <a href="{% url 'sacco:export_loans_csv' %}" 
+                     class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    Export All Loans (CSV)
+                  </a>
+                  <div class="border-t border-gray-200 my-1"></div>
+                  <a href="{% url 'sacco:export_payments_csv' %}?{{ request.GET.urlencode }}" 
+                     class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                    </svg>
+                    Export Payments (CSV)
+                  </a>
+                  <div class="border-t border-gray-200 my-1"></div>
+                  <a href="{% url 'sacco:export_page' %}" 
+                     class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Advanced Export
+                  </a>
+                  <div class="border-t border-gray-200 my-1"></div>
+                 
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
       </div>
     </div>
 
@@ -472,6 +531,24 @@ document.addEventListener('DOMContentLoaded', function () {
     if (expected > 0) pct = Math.max(0, Math.min(100, (paid / expected) * 100));
     txt.textContent = pct.toFixed(0) + '%';
   });
+});
+
+// Local dropdown toggle for this page
+function toggleLocalDropdown() {
+  const menu = document.getElementById('localDropdownMenu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+  const dropdown = document.getElementById('exportDropdownLocal');
+  const menu = document.getElementById('localDropdownMenu');
+  
+  if (dropdown && menu && !dropdown.contains(event.target)) {
+    menu.classList.add('hidden');
+  }
 });
 </script>
 {% endblock %}
