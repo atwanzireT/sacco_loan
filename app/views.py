@@ -11,14 +11,19 @@
 # ✅ Includes API endpoints required by urls.py:
 #    - check_member_loan_eligibility
 #    - get_loan_calculations
+# ✅ CSV Export with filtering support
+# ✅ Dedicated export page for advanced filtering
 # -----------------------------------------------------------------------------
 
 from __future__ import annotations
 
+import csv
 import json
 import logging
+import zipfile
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
+from io import BytesIO
 from math import floor
 from typing import Optional
 from urllib.parse import urlencode
@@ -44,6 +49,7 @@ from django.db.models.functions import Coalesce
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.encoding import smart_str
 from django.views.decorators.http import require_GET
 
 from accounts.decorators import finance_required, field_officer_required, role_required
@@ -153,6 +159,13 @@ def dperc(n: Decimal, d: Decimal) -> Decimal:
 
 def _can_record_payments(user: User) -> bool:
     return bool(user.is_authenticated and (user.is_superuser or user.role in PAYMENT_OFFICER_ROLES))
+
+
+def _csv_response(filename: str) -> HttpResponse:
+    """Create HTTP response for CSV download."""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 # =============================================================================
@@ -1715,3 +1728,326 @@ def loan_statement(request: HttpRequest, pk: int) -> HttpResponse:
         "processing_fee_due": loan.processing_fee_due,
     }
     return render(request, "sacco/statements/loan_statement.html", context)
+
+
+# =============================================================================
+# CSV EXPORT VIEWS
+# =============================================================================
+@login_required
+@finance_required
+def export_members_csv(request: HttpRequest) -> HttpResponse:
+    """Export members to CSV with current filters applied."""
+    # Apply same filters as member_list view
+    q = _clean(request.GET.get("q"))
+    subcounty = _clean(request.GET.get("subcounty"))
+    village = _clean(request.GET.get("village"))
+    has_open_loan = _clean(request.GET.get("has_open_loan"))
+    joined_from = _parse_date(request.GET.get("joined_from"))
+    joined_to = _parse_date(request.GET.get("joined_to"))
+    min_balance = _parse_decimal(request.GET.get("min_balance"))
+    max_balance = _parse_decimal(request.GET.get("max_balance"))
+    
+    qs = annotate_member_latest_loan(annotate_member_totals(Member.objects.all()))
+    
+    if q:
+        qs = qs.filter(
+            Q(member_id__icontains=q) | Q(first_name__icontains=q) | 
+            Q(last_name__icontains=q) | Q(phone__icontains=q) | Q(nin__icontains=q)
+        )
+    if subcounty:
+        qs = qs.filter(subcounty__icontains=subcounty)
+    if village:
+        qs = qs.filter(village__icontains=village)
+    if joined_from:
+        qs = qs.filter(joined_on__gte=joined_from)
+    if joined_to:
+        qs = qs.filter(joined_on__lte=joined_to)
+    if min_balance is not None:
+        qs = qs.filter(balance_a__gte=min_balance)
+    if max_balance is not None:
+        qs = qs.filter(balance_a__lte=max_balance)
+    if has_open_loan == "1":
+        qs = qs.filter(open_loans_a__gt=0)
+    elif has_open_loan == "0":
+        qs = qs.filter(open_loans_a=0)
+    
+    # Generate CSV
+    response = _csv_response(f"members_{timezone.localdate()}.csv")
+    writer = csv.writer(response)
+    
+    # Headers
+    headers = [
+        "Member ID", "First Name", "Last Name", "Full Name", "Phone", "Joined On",
+        "Address", "Next of Kin", "NIN", "Village", "Subcounty",
+        "Total Loans", "Total Expected (UGX)", "Total Paid (UGX)", "Balance (UGX)",
+        "Open Loans", "Closed Loans", "Has Open Loan", "Latest Loan ID", "Latest Loan Status"
+    ]
+    writer.writerow(headers)
+    
+    # Data rows
+    for member in qs.iterator(chunk_size=500):
+        writer.writerow([
+            member.member_id,
+            member.first_name,
+            member.last_name,
+            member.full_name,
+            member.phone,
+            member.joined_on,
+            member.address,
+            member.next_of_kin,
+            member.nin,
+            member.village,
+            member.subcounty,
+            getattr(member, 'loans_count_a', 0),
+            f"{getattr(member, 'total_expected_a', 0):,.2f}",
+            f"{getattr(member, 'total_paid_a', 0):,.2f}",
+            f"{getattr(member, 'balance_a', 0):,.2f}",
+            getattr(member, 'open_loans_a', 0),
+            getattr(member, 'closed_loans_a', 0),
+            "Yes" if getattr(member, 'open_loans_a', 0) > 0 else "No",
+            getattr(member, 'latest_loan_id', ''),
+            getattr(member, 'latest_loan_status', ''),
+        ])
+    
+    return response
+
+
+@login_required
+@finance_required
+def export_loans_csv(request: HttpRequest) -> HttpResponse:
+    """Export loans to CSV with current filters applied."""
+    today = _today()
+    
+    # Apply same filters as loan_list view
+    q = _clean(request.GET.get("q"))
+    status_filter = _clean(request.GET.get("status"))
+    payment_mode_filter = _clean(request.GET.get("payment_mode"))
+    fee_paid_filter = _clean(request.GET.get("fee_paid"))
+    start_from = _parse_date(request.GET.get("start_from"))
+    start_to = _parse_date(request.GET.get("start_to"))
+    due_from = _parse_date(request.GET.get("due_from"))
+    due_to = _parse_date(request.GET.get("due_to"))
+    min_balance = _parse_decimal(request.GET.get("min_balance"))
+    max_balance = _parse_decimal(request.GET.get("max_balance"))
+    
+    qs = annotate_loan_totals(Loan.objects.select_related("member"))
+    
+    if q:
+        qs = qs.filter(
+            Q(loan_id__icontains=q) | Q(member__member_id__icontains=q) |
+            Q(member__first_name__icontains=q) | Q(member__last_name__icontains=q) |
+            Q(member__phone__icontains=q)
+        )
+    
+    if status_filter:
+        if status_filter.lower() == "overdue":
+            qs = qs.filter(status=Loan.Status.OPEN, due_date__lt=today, balance_a__gt=ZERO)
+        else:
+            qs = qs.filter(status=status_filter)
+    
+    if payment_mode_filter:
+        qs = qs.filter(payment_mode=payment_mode_filter)
+    
+    if fee_paid_filter == "1":
+        qs = qs.filter(processing_fee_paid=True)
+    elif fee_paid_filter == "0":
+        qs = qs.filter(processing_fee__gt=ZERO, processing_fee_paid=False)
+    
+    if start_from:
+        qs = qs.filter(start_date__gte=start_from)
+    if start_to:
+        qs = qs.filter(start_date__lte=start_to)
+    if due_from:
+        qs = qs.filter(due_date__gte=due_from)
+    if due_to:
+        qs = qs.filter(due_date__lte=due_to)
+    
+    if min_balance is not None:
+        qs = qs.filter(balance_a__gte=min_balance)
+    if max_balance is not None:
+        qs = qs.filter(balance_a__lte=max_balance)
+    
+    # Generate CSV
+    response = _csv_response(f"loans_{timezone.localdate()}.csv")
+    writer = csv.writer(response)
+    
+    headers = [
+        "Loan ID", "Member ID", "Member Name", "Member Phone",
+        "Principal (UGX)", "Period (Months)", "Monthly Rate (%)", "Payment Mode",
+        "Processing Fee (UGX)", "Fee Paid", "Fee Paid On",
+        "Expected Total (UGX)", "Installment Amount (UGX)",
+        "Start Date", "Due Date", "Days Overdue", "Status",
+        "Amount Paid (UGX)", "Balance (UGX)", "Created Date", "Note"
+    ]
+    writer.writerow(headers)
+    
+    for loan in qs.iterator(chunk_size=500):
+        days_overdue = 0
+        if loan.status == Loan.Status.OPEN and loan.due_date and loan.due_date < today:
+            days_overdue = (today - loan.due_date).days
+        
+        writer.writerow([
+            loan.loan_id,
+            loan.member.member_id,
+            loan.member.full_name,
+            loan.member.phone,
+            f"{loan.principal:,.2f}",
+            loan.period,
+            f"{loan.rate:.2f}",
+            loan.get_payment_mode_display(),
+            f"{loan.processing_fee:,.2f}",
+            "Yes" if loan.processing_fee_paid else "No",
+            loan.processing_fee_paid_on or "",
+            f"{loan.expected_total:,.2f}",
+            f"{loan.installment_amount:,.2f}",
+            loan.start_date,
+            loan.due_date or "",
+            days_overdue,
+            loan.status,
+            f"{getattr(loan, 'amount_paid_a', 0):,.2f}",
+            f"{getattr(loan, 'balance_a', 0):,.2f}",
+            loan.created.date() if loan.created else "",
+            loan.note,
+        ])
+    
+    return response
+
+
+@login_required
+@finance_required
+def export_payments_csv(request: HttpRequest) -> HttpResponse:
+    """Export payments to CSV with date filtering."""
+    date_from = _parse_date(request.GET.get("date_from"))
+    date_to = _parse_date(request.GET.get("date_to"))
+    method = _clean(request.GET.get("method"))
+    loan_id = request.GET.get("loan_id")
+    min_amount = _parse_decimal(request.GET.get("min_amount"))
+    max_amount = _parse_decimal(request.GET.get("max_amount"))
+    
+    qs = Payment.objects.select_related("loan", "loan__member", "created_by")
+    
+    if date_from:
+        qs = qs.filter(date__gte=date_from)
+    if date_to:
+        qs = qs.filter(date__lte=date_to)
+    if method:
+        qs = qs.filter(method=method)
+    if loan_id:
+        qs = qs.filter(loan_id=loan_id)
+    if min_amount is not None:
+        qs = qs.filter(amount__gte=min_amount)
+    if max_amount is not None:
+        qs = qs.filter(amount__lte=max_amount)
+    
+    # Generate CSV
+    response = _csv_response(f"payments_{timezone.localdate()}.csv")
+    writer = csv.writer(response)
+    
+    headers = [
+        "Date", "Loan ID", "Member ID", "Member Name", "Member Phone",
+        "Amount (UGX)", "Payment Method", "Receipt Number", "Note",
+        "Recorded By", "Recorded At"
+    ]
+    writer.writerow(headers)
+    
+    for payment in qs.iterator(chunk_size=500):
+        writer.writerow([
+            payment.date,
+            payment.loan.loan_id,
+            payment.loan.member.member_id,
+            payment.loan.member.full_name,
+            payment.loan.member.phone,
+            f"{payment.amount:,.2f}",
+            payment.get_method_display() if payment.method else "",
+            payment.receipt,
+            payment.note,
+            payment.created_by.get_full_name() if payment.created_by else "",
+            payment.created.strftime("%Y-%m-%d %H:%M") if payment.created else "",
+        ])
+    
+    return response
+
+
+@login_required
+@finance_required
+def export_expenses_csv(request: HttpRequest) -> HttpResponse:
+    """Export expenses to CSV with current filters."""
+    date_from = _parse_date(request.GET.get("date_from"))
+    date_to = _parse_date(request.GET.get("date_to"))
+    status = _clean(request.GET.get("status"))
+    category = _clean(request.GET.get("category"))
+    min_amount = _parse_decimal(request.GET.get("min_amount"))
+    max_amount = _parse_decimal(request.GET.get("max_amount"))
+    
+    qs = Expense.objects.select_related("submitted_by", "approved_by")
+    
+    if date_from:
+        qs = qs.filter(date_incurred__gte=date_from)
+    if date_to:
+        qs = qs.filter(date_incurred__lte=date_to)
+    if status:
+        qs = qs.filter(status=status)
+    if category:
+        qs = qs.filter(category=category)
+    if min_amount is not None:
+        qs = qs.filter(amount__gte=min_amount)
+    if max_amount is not None:
+        qs = qs.filter(amount__lte=max_amount)
+    
+    # Generate CSV
+    response = _csv_response(f"expenses_{timezone.localdate()}.csv")
+    writer = csv.writer(response)
+    
+    headers = [
+        "Expense ID", "Title", "Category", "Amount (UGX)",
+        "Date Incurred", "Status", "Purpose",
+        "Submitted By", "Submitted At",
+        "Approved By", "Approved At",
+        "Rejection Reason", "Finance Notes"
+    ]
+    writer.writerow(headers)
+    
+    for expense in qs.iterator(chunk_size=500):
+        writer.writerow([
+            expense.expense_id,
+            expense.title,
+            expense.get_category_display(),
+            f"{expense.amount:,.2f}",
+            expense.date_incurred,
+            expense.get_status_display(),
+            expense.purpose,
+            expense.submitted_by.get_full_name() if expense.submitted_by else "",
+            expense.created.strftime("%Y-%m-%d %H:%M") if expense.created else "",
+            expense.approved_by.get_full_name() if expense.approved_by else "",
+            expense.approved_at.strftime("%Y-%m-%d %H:%M") if expense.approved_at else "",
+            expense.rejection_reason,
+            expense.finance_notes,
+        ])
+    
+    return response
+
+
+@login_required
+@finance_required
+def export_page(request: HttpRequest) -> HttpResponse:
+    """Dedicated export page with advanced filtering options."""
+    # Get counts for quick stats
+    member_count = Member.objects.count()
+    loan_count = Loan.objects.count()
+    payment_count = Payment.objects.count()
+    expense_count = Expense.objects.count()
+    
+    context = {
+        'member_count': member_count,
+        'loan_count': loan_count,
+        'payment_count': payment_count,
+        'expense_count': expense_count,
+        'date_from': request.GET.get('date_from', ''),
+        'date_to': request.GET.get('date_to', ''),
+        'status': request.GET.get('status', ''),
+        'category': request.GET.get('category', ''),
+        'payment_method': request.GET.get('payment_method', ''),
+        'min_amount': request.GET.get('min_amount', ''),
+        'max_amount': request.GET.get('max_amount', ''),
+    }
+    return render(request, 'sacco/export_page.html', context)

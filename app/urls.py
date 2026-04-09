@@ -68,6 +68,15 @@ urlpatterns = [
     path("reports/expenses/", views.expenses_report, name="expenses_report"),
 
     # =====================================================
+    # CSV Exports (Finance only)
+    # =====================================================
+    path("export/", views.export_page, name="export_page"),  # ← THIS MUST BE PRESENT
+    path("export/members/csv/", views.export_members_csv, name="export_members_csv"),
+    path("export/loans/csv/", views.export_loans_csv, name="export_loans_csv"),
+    path("export/payments/csv/", views.export_payments_csv, name="export_payments_csv"),
+    path("export/expenses/csv/", views.export_expenses_csv, name="export_expenses_csv"),
+
+    # =====================================================
     # API endpoints
     # =====================================================
     path(

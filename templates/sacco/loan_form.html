@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-  {% if form.instance.pk %}Edit Loan {{ form.instance.loan_id }}{% else %}New Loan{% endif %} — Great Pearl SACCO
+  {% if form.instance.pk %}Edit Loan {{ form.instance.loan_id }}{% else %}New Loan{% endif %} — Vaulta Capital Growth
 {% endblock %}
 
 {% block extra_head %}
@@ -32,6 +32,28 @@
     background:linear-gradient(135deg,var(--brand-50) 0%, #fffdf6 100%);
     border:1px solid var(--brand-100);
   }
+  .calc-card {
+    transition: all 0.3s ease;
+  }
+  .calc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  .info-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    background: var(--brand-50);
+    color: var(--brand-700);
+  }
+  .calculation-step {
+    border-left: 3px solid var(--brand);
+    background: #f9fafb;
+  }
 </style>
 {% endblock %}
 
@@ -54,7 +76,7 @@
             {% if form.instance.pk %}
               Update loan details for <span class="font-medium">{{ form.instance.member.full_name }}</span>
             {% else %}
-              Create a new loan application. Expected total, installment, and due date are auto-calculated.
+              Create a new loan application. All amounts are auto-calculated in real-time.
             {% endif %}
           </p>
         </div>
@@ -161,7 +183,7 @@
             Loan Terms
           </h2>
           <p class="text-sm text-gray-500 mt-1">
-            Interest rate is <span class="font-medium">monthly %</span>. Processing fee is paid upfront separately (not included in expected total).
+            Enter the loan details below. All calculations update automatically.
           </p>
         </div>
 
@@ -180,7 +202,7 @@
             </label>
             {{ form.processing_fee }}
             {% if form.processing_fee.errors %}<p class="field-error">{{ form.processing_fee.errors.0 }}</p>{% endif %}
-            <p class="help">Paid once before repayments. Separate from expected total.</p>
+            <p class="help">Paid once before repayments (excluded from loan total).</p>
           </div>
 
           <div>
@@ -198,7 +220,7 @@
             </label>
             {{ form.rate }}
             {% if form.rate.errors %}<p class="field-error">{{ form.rate.errors.0 }}</p>{% endif %}
-            <p class="help">Monthly rate used for interest calculation.</p>
+            <p class="help">Monthly interest rate (e.g., 15% per month).</p>
           </div>
 
           <div class="lg:col-span-4">
@@ -209,64 +231,143 @@
               {{ form.payment_mode }}
             </div>
             {% if form.payment_mode.errors %}<p class="field-error">{{ form.payment_mode.errors.0 }}</p>{% endif %}
-            <p class="help">Daily = months×30 installments, Weekly = months×4, Monthly = months×1.</p>
+            <p class="help">
+              <span class="info-badge">Daily</span> = {{ form.period.value|default:"X" }} months × 30 installments &nbsp;
+              <span class="info-badge">Weekly</span> = {{ form.period.value|default:"X" }} months × 4 installments &nbsp;
+              <span class="info-badge">Monthly</span> = {{ form.period.value|default:"X" }} months × 1 installment
+            </p>
           </div>
         </div>
       </section>
 
-      <!-- Calculated Amounts & Dates (MODEL-ACCURATE) -->
+      <!-- Live Calculation Display - Enhanced -->
+      <section class="preview-card rounded-xl p-6">
+        <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
+          <h3 class="text-lg font-semibold text-brand flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Live Loan Calculation
+          </h3>
+          <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+            Updates in real-time
+          </span>
+        </div>
+
+        <!-- Formula Display -->
+        <div class="calculation-step rounded-lg p-4 mb-6">
+          <div class="text-sm font-medium text-gray-700 mb-2">📐 Calculation Formula:</div>
+          <div class="text-xs text-gray-600 space-y-1">
+            <div>• <strong>Interest Amount</strong> = Principal × (Monthly Rate ÷ 100) × Number of Months</div>
+            <div>• <strong>Expected Total</strong> = Principal + Interest Amount</div>
+            <div>• <strong>Number of Installments</strong> = Based on Payment Mode (Daily=×30, Weekly=×4, Monthly=×1)</div>
+            <div>• <strong>Installment Amount</strong> = Expected Total ÷ Number of Installments</div>
+            <div>• <strong>Due Date</strong> = Start Date + Number of Months</div>
+          </div>
+        </div>
+
+        <!-- Main Results Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="calc-card text-center p-4 bg-white rounded-lg border-2" style="border-color:var(--brand-100);">
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Principal</div>
+            <div class="text-2xl font-bold text-gray-900 mt-2" id="display-principal">UGX 0</div>
+            <div class="text-xs text-gray-500 mt-1">Base loan amount</div>
+          </div>
+
+          <div class="calc-card text-center p-4 bg-white rounded-lg border-2" style="border-color:var(--brand-100);">
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Interest Amount</div>
+            <div class="text-2xl font-bold text-brand-700 mt-2" id="display-interest">UGX 0</div>
+            <div class="text-xs text-gray-500 mt-1">Principal × Rate% × Months</div>
+          </div>
+
+          <div class="calc-card text-center p-4 bg-gradient-to-br from-brand-50 to-white rounded-lg border-2" style="border-color:var(--brand);">
+            <div class="text-xs font-semibold text-brand-700 uppercase tracking-wide">Expected Total</div>
+            <div class="text-2xl font-bold text-brand-700 mt-2" id="display-total">UGX 0</div>
+            <div class="text-xs text-gray-600 mt-1">Principal + Interest</div>
+          </div>
+
+          <div class="calc-card text-center p-4 bg-white rounded-lg border-2" style="border-color:var(--brand-100);">
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Processing Fee</div>
+            <div class="text-xl font-bold text-gray-900 mt-2" id="display-fee">UGX 0</div>
+            <div class="text-xs text-gray-500 mt-1">Paid separately upfront</div>
+          </div>
+        </div>
+
+        <!-- Payment Schedule Details -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="text-center p-3 bg-gray-50 rounded-lg">
+            <div class="text-sm font-semibold text-gray-600">Payment Mode</div>
+            <div class="text-lg font-bold text-gray-900 mt-1" id="display-mode">Monthly</div>
+          </div>
+          
+          <div class="text-center p-3 bg-gray-50 rounded-lg">
+            <div class="text-sm font-semibold text-gray-600">Number of Installments</div>
+            <div class="text-lg font-bold text-gray-900 mt-1" id="display-installments-count">0</div>
+          </div>
+          
+          <div class="text-center p-3 bg-gray-50 rounded-lg">
+            <div class="text-sm font-semibold text-gray-600">Installment Amount</div>
+            <div class="text-lg font-bold text-brand-700 mt-1" id="display-installment">UGX 0</div>
+          </div>
+        </div>
+
+        <!-- Dates Information -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex justify-between items-center p-3 bg-white rounded-lg border">
+            <span class="text-sm font-medium text-gray-600">Start Date:</span>
+            <span class="text-sm font-semibold text-gray-900" id="display-start-date">—</span>
+          </div>
+          <div class="flex justify-between items-center p-3 bg-white rounded-lg border">
+            <span class="text-sm font-medium text-gray-600">Due Date:</span>
+            <span class="text-sm font-semibold text-brand-700" id="display-due-date">—</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <div class="flex justify-between text-xs text-gray-600 mb-1">
+            <span>Loan Progress Indicator</span>
+            <span id="progress-percentage">0%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div class="bg-brand h-2 rounded-full transition-all duration-300" id="progress-bar" style="width: 0%"></div>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">
+            * This is a preview based on your inputs. The loan will be created with these calculated values.
+          </p>
+        </div>
+      </section>
+
+      <!-- Hidden Form Fields -->
+      <div style="display: none;">
+        {{ form.expected_total }}
+        {{ form.installment_amount }}
+        {{ form.due_date }}
+      </div>
+
+      <!-- Start Date & Status -->
       <section class="gradient-border rounded-xl bg-white">
         <div class="px-6 py-4 border-b border-gray-200">
           <h2 class="text-lg font-semibold text-gray-900 flex items-center">
             <svg class="w-5 h-5 mr-2 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2z"></path>
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
-            Calculated Amounts & Dates
+            Loan Schedule & Status
           </h2>
-          <p class="text-sm text-gray-500 mt-1">
-            Expected total and installment are auto-calculated using the monthly rate. Processing fee is excluded.
-          </p>
         </div>
 
-        <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label for="{{ form.start_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
               Start Date <span class="text-red-600">*</span>
             </label>
             {{ form.start_date }}
             {% if form.start_date.errors %}<p class="field-error">{{ form.start_date.errors.0 }}</p>{% endif %}
-            <p class="help">Used to compute due date (start + months).</p>
           </div>
 
           <div>
-            <label for="{{ form.due_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-              Due Date
-            </label>
-            {{ form.due_date }}
-            {% if form.due_date.errors %}<p class="field-error">{{ form.due_date.errors.0 }}</p>{% endif %}
-            <p class="help">Auto-calculated; no need to edit.</p>
-          </div>
-
-          <div>
-            <label for="{{ form.expected_total.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-              Expected Total (UGX)
-            </label>
-            {{ form.expected_total }}
-            {% if form.expected_total.errors %}<p class="field-error">{{ form.expected_total.errors.0 }}</p>{% endif %}
-            <p class="help">Principal + Interest (monthly rate × months). Fee excluded.</p>
-          </div>
-
-          <div>
-            <label for="{{ form.installment_amount.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-              Installment Amount (UGX)
-            </label>
-            {{ form.installment_amount }}
-            {% if form.installment_amount.errors %}<p class="field-error">{{ form.installment_amount.errors.0 }}</p>{% endif %}
-            <p class="help">Expected total ÷ number of installments (based on mode).</p>
-          </div>
-
-          <div class="md:col-span-2 lg:col-span-4">
             <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
               Loan Status
             </label>
@@ -292,7 +393,6 @@
         </div>
 
         <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <!-- Evidence 1 -->
           <div class="file-upload-area rounded-xl p-4 text-center">
             <label for="{{ form.evidence_letter_1.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
               Evidence Document 1
@@ -306,7 +406,6 @@
             {% endif %}
           </div>
 
-          <!-- Evidence 2 -->
           <div class="file-upload-area rounded-xl p-4 text-center">
             <label for="{{ form.evidence_letter_2.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
               Evidence Document 2
@@ -320,7 +419,6 @@
             {% endif %}
           </div>
 
-          <!-- Evidence 3 -->
           <div class="file-upload-area rounded-xl p-4 text-center">
             <label for="{{ form.evidence_letter_3.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
               Evidence Document 3
@@ -336,48 +434,6 @@
         </div>
       </section>
 
-      <!-- Preview (Create only) -->
-      {% if not form.instance.pk %}
-        <section class="preview-card rounded-xl p-6">
-          <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
-            <h3 class="text-lg font-semibold text-brand flex items-center">
-              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              Loan Calculation Preview
-            </h3>
-            <span class="text-xs text-gray-600">
-              Interest uses <strong>monthly %</strong> and expected total excludes processing fee.
-            </span>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="text-center p-4 bg-white rounded-lg border" style="border-color:var(--brand-100);">
-              <div class="font-semibold text-sm" style="color:var(--brand-700);">Expected Total</div>
-              <div class="text-xl font-bold text-gray-900 mt-1" id="preview-total">UGX 0.00</div>
-              <div class="text-xs text-gray-500 mt-1">Principal + Interest (fee excluded)</div>
-            </div>
-
-            <div class="text-center p-4 bg-white rounded-lg border" style="border-color:var(--brand-100);">
-              <div class="font-semibold text-sm" style="color:var(--brand-700);">Interest Amount</div>
-              <div class="text-xl font-bold text-gray-900 mt-1" id="preview-interest">UGX 0.00</div>
-              <div class="text-xs text-gray-500 mt-1">principal × monthly% × months</div>
-            </div>
-
-            <div class="text-center p-4 bg-white rounded-lg border" style="border-color:var(--brand-100);">
-              <div class="font-semibold text-sm" style="color:var(--brand-700);">Installment Amount</div>
-              <div class="text-xl font-bold text-gray-900 mt-1" id="preview-installment">UGX 0.00</div>
-              <div class="text-xs text-gray-500 mt-1">based on payment mode</div>
-            </div>
-          </div>
-
-          <div class="mt-4 text-sm text-gray-600">
-            Processing fee (if any) is paid upfront separately: <span class="font-semibold" id="preview-fee">UGX 0.00</span>
-          </div>
-        </section>
-      {% endif %}
-
       {% if form.instance.pk %}
         <div class="text-center text-sm text-gray-500 py-4">
           Loan created on {{ form.instance.created|date:"M j, Y" }}
@@ -390,108 +446,182 @@
 </div>
 {% endblock %}
 
-{% block extra_body %}
+{% block extra_js %}
 <script>
-(function () {
-  const principalEl     = document.getElementById('{{ form.principal.id_for_label }}');
+(function() {
+  // Get all form elements
+  const principalEl = document.getElementById('{{ form.principal.id_for_label }}');
   const processingFeeEl = document.getElementById('{{ form.processing_fee.id_for_label }}');
-  const periodEl        = document.getElementById('{{ form.period.id_for_label }}'); // months
-  const rateEl          = document.getElementById('{{ form.rate.id_for_label }}');   // monthly %
-  const paymentModeEl   = document.getElementById('{{ form.payment_mode.id_for_label }}');
-  const startDateEl     = document.getElementById('{{ form.start_date.id_for_label }}');
+  const periodEl = document.getElementById('{{ form.period.id_for_label }}');
+  const rateEl = document.getElementById('{{ form.rate.id_for_label }}');
+  const paymentModeEl = document.getElementById('{{ form.payment_mode.id_for_label }}');
+  const startDateEl = document.getElementById('{{ form.start_date.id_for_label }}');
   const expectedTotalEl = document.getElementById('{{ form.expected_total.id_for_label }}');
-  const installmentEl   = document.getElementById('{{ form.installment_amount.id_for_label }}');
-  const dueDateEl       = document.getElementById('{{ form.due_date.id_for_label }}');
-
-  const previewTotal       = document.getElementById('preview-total');
-  const previewInterest    = document.getElementById('preview-interest');
-  const previewInstallment = document.getElementById('preview-installment');
-  const previewFee         = document.getElementById('preview-fee');
-
-  // computed fields read-only
-  [expectedTotalEl, installmentEl, dueDateEl].forEach(el => { if (el) el.readOnly = true; });
-
-  const round2 = (n) => (isFinite(n) ? (Math.round((+n + Number.EPSILON) * 100) / 100) : 0);
-  const f2 = (n) => round2(n).toFixed(2);
-  const fmtUGX = (n) => `UGX ${Number(round2(n)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-  // add months like relativedelta(months=period)
-  function addMonthsISO(yyyyMmDd, months) {
-    if (!yyyyMmDd) return '';
-    const parts = yyyyMmDd.split('-').map(Number);
+  const installmentEl = document.getElementById('{{ form.installment_amount.id_for_label }}');
+  const dueDateHidden = document.getElementById('{{ form.due_date.id_for_label }}');
+  
+  // Display elements
+  const displayPrincipal = document.getElementById('display-principal');
+  const displayInterest = document.getElementById('display-interest');
+  const displayTotal = document.getElementById('display-total');
+  const displayFee = document.getElementById('display-fee');
+  const displayMode = document.getElementById('display-mode');
+  const displayInstallmentsCount = document.getElementById('display-installments-count');
+  const displayInstallment = document.getElementById('display-installment');
+  const displayStartDate = document.getElementById('display-start-date');
+  const displayDueDate = document.getElementById('display-due-date');
+  const progressBar = document.getElementById('progress-bar');
+  const progressPercentage = document.getElementById('progress-percentage');
+  
+  // Helper functions
+  const formatMoney = (value) => {
+    const num = parseFloat(value) || 0;
+    return `UGX ${num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  };
+  
+  const formatMoneyDecimal = (value) => {
+    const num = parseFloat(value) || 0;
+    return `UGX ${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+  
+  const formatNumber = (value) => {
+    const num = parseFloat(value) || 0;
+    return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
+  
+  const roundToTwo = (num) => {
+    return Math.round((num + Number.EPSILON) * 100) / 100;
+  };
+  
+  const addMonths = (dateStr, months) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
     if (parts.length !== 3) return '';
-    const [y, m, d] = parts;
-    if (!y || !m || !d) return '';
-
-    const dt = new Date(Date.UTC(y, m - 1, 1));
-    dt.setUTCMonth(dt.getUTCMonth() + (months|0));
-    const lastDay = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate();
-    dt.setUTCDate(Math.min(d, lastDay));
-
-    const yy = dt.getUTCFullYear();
-    const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(dt.getUTCDate()).padStart(2, '0');
-    return `${yy}-${mm}-${dd}`;
-  }
-
-  function totalInstallments(months, mode) {
-    const m = (mode || 'MONTHLY').toUpperCase();
-    const p = Math.max(1, parseInt(months || '0', 10) || 0);
-    if (m === 'DAILY')  return p * 30;
-    if (m === 'WEEKLY') return p * 4;
-    return p; // MONTHLY
-  }
-
-  function calc() {
-    const principal = parseFloat(principalEl?.value || '0') || 0;
-    const fee       = parseFloat(processingFeeEl?.value || '0') || 0; // not included in expected_total
-    const months    = parseInt(periodEl?.value || '0', 10) || 0;
-    const ratePct   = parseFloat(rateEl?.value || '0') || 0; // monthly %
-    const mode      = (paymentModeEl?.value || 'MONTHLY').toUpperCase();
-    const startISO  = startDateEl?.value || '';
-
-    if (principal > 0 && months > 0 && ratePct >= 0) {
-      const interest = principal * (ratePct / 100.0) * months;
+    
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+    date.setMonth(date.getMonth() + parseInt(months));
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+  
+  const getInstallmentsCount = (months, mode) => {
+    const m = parseInt(months) || 0;
+    const modeUpper = (mode || 'MONTHLY').toUpperCase();
+    
+    if (modeUpper === 'DAILY') return m * 30;
+    if (modeUpper === 'WEEKLY') return m * 4;
+    return m; // MONTHLY
+  };
+  
+  const getPaymentModeDisplay = (mode) => {
+    const modeUpper = (mode || 'MONTHLY').toUpperCase();
+    const modes = {
+      'DAILY': 'Daily',
+      'WEEKLY': 'Weekly',
+      'MONTHLY': 'Monthly'
+    };
+    return modes[modeUpper] || 'Monthly';
+  };
+  
+  // Main calculation function
+  const calculateLoan = () => {
+    // Get values
+    const principal = parseFloat(principalEl?.value) || 0;
+    const processingFee = parseFloat(processingFeeEl?.value) || 0;
+    const months = parseInt(periodEl?.value) || 0;
+    const rate = parseFloat(rateEl?.value) || 0;
+    const paymentMode = paymentModeEl?.value || 'MONTHLY';
+    const startDate = startDateEl?.value || '';
+    
+    // Validate
+    const isValid = principal > 0 && months > 0 && rate >= 0;
+    
+    if (isValid) {
+      // Calculate interest (Simple interest: Principal × Monthly Rate% × Months)
+      const interest = principal * (rate / 100) * months;
       const expectedTotal = principal + interest;
-
-      const n = Math.max(1, totalInstallments(months, mode));
-      const installment = expectedTotal / n;
-
-      if (expectedTotalEl) expectedTotalEl.value = f2(expectedTotal);
-      if (installmentEl)   installmentEl.value   = f2(installment);
-
-      if (previewTotal)       previewTotal.textContent       = fmtUGX(expectedTotal);
-      if (previewInterest)    previewInterest.textContent    = fmtUGX(interest);
-      if (previewInstallment) previewInstallment.textContent = fmtUGX(installment);
+      const installmentsCount = getInstallmentsCount(months, paymentMode);
+      const installmentAmount = installmentsCount > 0 ? expectedTotal / installmentsCount : 0;
+      const dueDate = addMonths(startDate, months);
+      
+      // Update form fields
+      if (expectedTotalEl) expectedTotalEl.value = roundToTwo(expectedTotal).toFixed(2);
+      if (installmentEl) installmentEl.value = roundToTwo(installmentAmount).toFixed(2);
+      if (dueDateHidden) dueDateHidden.value = dueDate;
+      
+      // Update display fields
+      if (displayPrincipal) displayPrincipal.textContent = formatMoney(principal);
+      if (displayInterest) displayInterest.textContent = formatMoney(interest);
+      if (displayTotal) displayTotal.textContent = formatMoney(expectedTotal);
+      if (displayFee) displayFee.textContent = formatMoney(processingFee);
+      if (displayMode) displayMode.textContent = getPaymentModeDisplay(paymentMode);
+      if (displayInstallmentsCount) displayInstallmentsCount.textContent = formatNumber(installmentsCount);
+      if (displayInstallment) displayInstallment.textContent = formatMoneyDecimal(installmentAmount);
+      if (displayStartDate) displayStartDate.textContent = formatDate(startDate);
+      if (displayDueDate) displayDueDate.textContent = formatDate(dueDate);
+      
+      // Update progress bar (based on payment progress - for new loans, show 0%)
+      const progress = 0;
+      if (progressBar) progressBar.style.width = `${progress}%`;
+      if (progressPercentage) progressPercentage.textContent = `${progress}%`;
     } else {
+      // Clear fields
       if (expectedTotalEl) expectedTotalEl.value = '0.00';
-      if (installmentEl)   installmentEl.value   = '0.00';
-      if (previewTotal)       previewTotal.textContent       = 'UGX 0.00';
-      if (previewInterest)    previewInterest.textContent    = 'UGX 0.00';
-      if (previewInstallment) previewInstallment.textContent = 'UGX 0.00';
+      if (installmentEl) installmentEl.value = '0.00';
+      if (dueDateHidden) dueDateHidden.value = '';
+      
+      // Reset display
+      if (displayPrincipal) displayPrincipal.textContent = formatMoney(principal);
+      if (displayInterest) displayInterest.textContent = formatMoney(0);
+      if (displayTotal) displayTotal.textContent = formatMoney(0);
+      if (displayFee) displayFee.textContent = formatMoney(processingFee);
+      if (displayMode) displayMode.textContent = getPaymentModeDisplay(paymentMode);
+      if (displayInstallmentsCount) displayInstallmentsCount.textContent = '0';
+      if (displayInstallment) displayInstallment.textContent = formatMoneyDecimal(0);
+      if (displayStartDate) displayStartDate.textContent = formatDate(startDate);
+      if (displayDueDate) displayDueDate.textContent = '—';
+      
+      if (progressBar) progressBar.style.width = '0%';
+      if (progressPercentage) progressPercentage.textContent = '0%';
     }
-
-    if (dueDateEl) {
-      dueDateEl.value = (startISO && months > 0) ? addMonthsISO(startISO, months) : '';
-    }
-
-    if (previewFee) previewFee.textContent = fmtUGX(fee);
-  }
-
-  // default start date to today if empty
+  };
+  
+  // Set default start date to today if empty
   if (startDateEl && !startDateEl.value) {
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    startDateEl.value = `${yyyy}-${mm}-${dd}`;
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    startDateEl.value = `${year}-${month}-${day}`;
   }
-
-  [principalEl, processingFeeEl, periodEl, rateEl, paymentModeEl, startDateEl]
-    .filter(Boolean)
-    .forEach(el => { el.addEventListener('input', calc); el.addEventListener('change', calc); });
-
-  calc();
+  
+  // Make fields read-only
+  if (expectedTotalEl) expectedTotalEl.readOnly = true;
+  if (installmentEl) installmentEl.readOnly = true;
+  if (dueDateHidden) dueDateHidden.readOnly = true;
+  
+  // Add event listeners
+  const inputs = [principalEl, processingFeeEl, periodEl, rateEl, paymentModeEl, startDateEl];
+  inputs.forEach(el => {
+    if (el) {
+      el.addEventListener('input', calculateLoan);
+      el.addEventListener('change', calculateLoan);
+    }
+  });
+  
+  // Initial calculation
+  calculateLoan();
 })();
 </script>
 {% endblock %}

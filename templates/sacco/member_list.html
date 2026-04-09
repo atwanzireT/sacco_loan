@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
-{% block title %}Members — Great Pearl SACCO{% endblock %}
+{% block title %}Members — Vaulta Capital Growth{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -113,7 +113,7 @@
 <div class="min-h-screen bg-gray-50/40 py-6">
   <div class="page-wrap px-4 sm:px-6 lg:px-8">
 
-    <!-- Header -->
+    <!-- Header with Export Button -->
     <div class="mb-6">
       <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
@@ -121,15 +121,62 @@
           <p class="text-gray-600 mt-1">Browse, search and manage SACCO members</p>
         </div>
 
-        {% if request.user.is_authenticated %}
-          <a href="{% url 'sacco:member_create' %}" class="btn btn-primary">
-            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-            </svg>
-            New Member
-          </a>
-        {% endif %}
+        <div class="flex gap-3">
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'sacco:member_create' %}" class="btn btn-primary">
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+              </svg>
+              New Member
+            </a>
+          {% endif %}
+
+          <!-- Export Button - Only for Finance/Admin -->
+          {% if request.user.is_authenticated and request.user.is_superuser or request.user.role == 'FINANCE' %}
+            <div class="relative" id="exportDropdownLocal">
+              <button type="button" onclick="toggleLocalDropdown()" class="btn btn-outline">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Export
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              <div id="localDropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                <div class="py-1">
+                  <a href="{% url 'sacco:export_members_csv' %}?{{ request.GET.urlencode }}" 
+                     class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Export Current View (CSV)
+                  </a>
+                  <a href="{% url 'sacco:export_members_csv' %}" 
+                     class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    Export All Members (CSV)
+                  </a>
+                  <div class="border-t border-gray-200 my-1"></div>
+                  <a href="{% url 'sacco:export_all_zip' %}" 
+                     class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                    </svg>
+                    Export All Data (ZIP)
+                  </a>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
       </div>
     </div>
 
@@ -188,7 +235,7 @@
           <div class="lg:col-span-2">
             <label class="block text-xs font-extrabold text-gray-600 uppercase tracking-wider mb-2">Show</label>
             <select name="per_page" class="input select js-autosubmit">
-              {% for n in per_page_options %}
+              {% for n in PER_PAGE_OPTIONS %}
                 <option value="{{ n }}" {% if per_page|stringformat:"s" == n|stringformat:"s" %}selected{% endif %}>{{ n }}</option>
               {% endfor %}
             </select>
@@ -271,7 +318,7 @@
 
                   <!-- Loans -->
                   <td class="px-6 py-4 whitespace-nowrap">
-                    {% with total=member.total_loans|default:member.loan_count open=member.open_loans|default:0 %}
+                    {% with total=member.loans_count_a|default:member.loan_count open=member.open_loans_a|default:0 %}
                       {% if total > 0 %}
                         <span class="pill">
                           <span class="dot"></span>
@@ -407,6 +454,24 @@ document.addEventListener('DOMContentLoaded', function () {
       if (last && this.value === '') form.submit();
       last = this.value;
     });
+  }
+});
+
+// Local dropdown toggle for this page
+function toggleLocalDropdown() {
+  const menu = document.getElementById('localDropdownMenu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+  const dropdown = document.getElementById('exportDropdownLocal');
+  const menu = document.getElementById('localDropdownMenu');
+  
+  if (dropdown && menu && !dropdown.contains(event.target)) {
+    menu.classList.add('hidden');
   }
 });
 </script>

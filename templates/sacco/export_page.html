@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Advanced Export — Vaulta Capital Growth{% endblock %}
+
+{% block extra_head %}
+<style>
+  .export-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .export-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1);
+  }
+  .stats-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--brand);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50/40 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-extrabold text-gray-900">Data Export Center</h1>
+      <p class="text-gray-600 mt-2">Export your data in CSV format with advanced options</p>
+    </div>
+
+    <!-- Quick Export Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      
+      <!-- Members Card -->
+      <div class="export-card bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+        <div class="text-4xl mb-3">👥</div>
+        <h3 class="font-bold text-lg mb-1">Members</h3>
+        <div class="stats-number mb-3">{{ member_count|default:0|intcomma }}</div>
+        <p class="text-gray-500 text-sm mb-4">Total registered members</p>
+        <div class="flex gap-2">
+          <a href="{% url 'sacco:export_members_csv' %}" class="btn-primary flex-1 justify-center text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            CSV
+          </a>
+        </div>
+      </div>
+      
+      <!-- Loans Card -->
+      <div class="export-card bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+        <div class="text-4xl mb-3">💰</div>
+        <h3 class="font-bold text-lg mb-1">Loans</h3>
+        <div class="stats-number mb-3">{{ loan_count|default:0|intcomma }}</div>
+        <p class="text-gray-500 text-sm mb-4">Total loan applications</p>
+        <a href="{% url 'sacco:export_loans_csv' %}" class="btn-primary flex-1 justify-center text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Export Loans
+        </a>
+      </div>
+      
+      <!-- Payments Card -->
+      <div class="export-card bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+        <div class="text-4xl mb-3">💵</div>
+        <h3 class="font-bold text-lg mb-1">Payments</h3>
+        <div class="stats-number mb-3">{{ payment_count|default:0|intcomma }}</div>
+        <p class="text-gray-500 text-sm mb-4">Total payment transactions</p>
+        <a href="{% url 'sacco:export_payments_csv' %}" class="btn-primary flex-1 justify-center text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Export Payments
+        </a>
+      </div>
+      
+      <!-- Expenses Card -->
+      <div class="export-card bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+        <div class="text-4xl mb-3">📊</div>
+        <h3 class="font-bold text-lg mb-1">Expenses</h3>
+        <div class="stats-number mb-3">{{ expense_count|default:0|intcomma }}</div>
+        <p class="text-gray-500 text-sm mb-4">Total expense records</p>
+        <a href="{% url 'sacco:export_expenses_csv' %}" class="btn-primary flex-1 justify-center text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Export Expenses
+        </a>
+      </div>
+    </div>
+
+    <!-- Export Tips -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="border-b border-gray-200 bg-gray-50 px-6 py-4">
+        <h2 class="text-xl font-bold text-gray-900">💡 Export Tips</h2>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="flex items-start gap-3">
+            <div class="text-green-600 text-xl">✓</div>
+            <div>
+              <strong class="font-semibold">Large datasets</strong>
+              <p class="text-gray-600 text-sm">Exports are processed in chunks to handle thousands of records efficiently</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="text-green-600 text-xl">✓</div>
+            <div>
+              <strong class="font-semibold">Date filtering</strong>
+              <p class="text-gray-600 text-sm">Use date filters on list pages before exporting to get specific periods</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="text-green-600 text-xl">✓</div>
+            <div>
+              <strong class="font-semibold">CSV format</strong>
+              <p class="text-gray-600 text-sm">Compatible with Excel, Google Sheets, and most database tools</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="text-green-600 text-xl">✓</div>
+            <div>
+              <strong class="font-semibold">Data security</strong>
+              <p class="text-gray-600 text-sm">Exports are only available to Finance and Admin users</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

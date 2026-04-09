@@ -167,6 +167,47 @@
       background:#f9fafb !important;
       color:#111827 !important;
     }
+
+    /* Dropdown menu styles */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      z-index: 50;
+      min-width: 200px;
+      margin-top: 0.5rem;
+      background-color: #fff;
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+      overflow: hidden;
+    }
+    
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      color: #374151;
+      transition: background-color 0.2s ease;
+      text-decoration: none;
+    }
+    
+    .dropdown-item:hover {
+      background-color: #f9fafb;
+      color: var(--brand);
+    }
+    
+    .dropdown-divider {
+      height: 1px;
+      margin: 0.25rem 0;
+      background-color: #e5e7eb;
+    }
   </style>
 
   {% if form %}{{ form.media.css }}{% endif %}
@@ -230,6 +271,61 @@
                    class="nav-link {% if request.resolver_match.url_name and 'finance' in request.resolver_match.url_name %}active{% endif %}">
                   Finance
                 </a>
+              {% endif %}
+
+              <!-- Export Dropdown for Finance/Admin users -->
+              {% if request.user.is_superuser or request.user.role == 'FINANCE' %}
+                <div class="dropdown" id="exportDropdown">
+                  <button type="button" class="nav-link" onclick="toggleDropdown()">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Export
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                  </button>
+                  <div id="dropdownMenu" class="dropdown-menu hidden">
+                    <a href="{% url 'sacco:export_members_csv' %}" class="dropdown-item">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                      </svg>
+                      Export Members
+                    </a>
+                    <a href="{% url 'sacco:export_loans_csv' %}" class="dropdown-item">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      Export Loans
+                    </a>
+                    <a href="{% url 'sacco:export_payments_csv' %}" class="dropdown-item">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                      </svg>
+                      Export Payments
+                    </a>
+                    <a href="{% url 'sacco:export_expenses_csv' %}" class="dropdown-item">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                      </svg>
+                      Export Expenses
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'sacco:export_page' %}" class="dropdown-item">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                      </svg>
+                      Advanced Export
+                    </a>
+                    <div class="dropdown-divider"></div>
+                  </div>
+                </div>
               {% endif %}
             {% endif %}
           </nav>
@@ -330,6 +426,32 @@
               </a>
             {% endif %}
 
+            <!-- Mobile Export Section -->
+            {% if request.user.is_superuser or request.user.role == 'FINANCE' %}
+              <div class="mt-2 rounded-2xl border border-gray-200 bg-white p-4">
+                <div class="mb-2 font-semibold text-gray-900">Export Data</div>
+                <div class="grid gap-2">
+                  <a href="{% url 'sacco:export_members_csv' %}" class="dropdown-item px-2">
+                    📋 Export Members
+                  </a>
+                  <a href="{% url 'sacco:export_loans_csv' %}" class="dropdown-item px-2">
+                    💰 Export Loans
+                  </a>
+                  <a href="{% url 'sacco:export_payments_csv' %}" class="dropdown-item px-2">
+                    💵 Export Payments
+                  </a>
+                  <a href="{% url 'sacco:export_expenses_csv' %}" class="dropdown-item px-2">
+                    📊 Export Expenses
+                  </a>
+                  <div class="dropdown-divider"></div>
+                  <a href="{% url 'sacco:export_page' %}" class="dropdown-item px-2">
+                    🚀 Advanced Export
+                  </a>
+                  <div class="dropdown-divider"></div>
+                </div>
+              </div>
+            {% endif %}
+
             <div class="mt-2 rounded-2xl border border-gray-200 bg-white p-4">
               <div class="flex items-center gap-3">
                 <div class="avatar">{{ request.user.username|first|upper }}</div>
@@ -392,6 +514,7 @@
   {% if formset %}{{ formset.media.js }}{% endif %}
 
   <script>
+    // Auto-hide messages after 3.5 seconds
     setTimeout(function () {
       const box = document.getElementById("django-messages");
       if (box) {
@@ -402,6 +525,7 @@
       }
     }, 3500);
 
+    // Initialize Select2 if jQuery is available
     document.addEventListener("DOMContentLoaded", function () {
       if (window.jQuery) {
         $(".django-select2").each(function () {
@@ -413,6 +537,24 @@
 
           $el.trigger("change");
         });
+      }
+    });
+
+    // Dropdown toggle function
+    window.toggleDropdown = function() {
+      const menu = document.getElementById('dropdownMenu');
+      if (menu) {
+        menu.classList.toggle('hidden');
+      }
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      const dropdown = document.getElementById('exportDropdown');
+      const menu = document.getElementById('dropdownMenu');
+      
+      if (dropdown && menu && !dropdown.contains(event.target)) {
+        menu.classList.add('hidden');
       }
     });
   </script>
